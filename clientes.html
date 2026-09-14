@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Manager — Clientes</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="encabezado">
+        <div class="encabezado__superior">
+            <a class="marca" href="index.html">Gym Manager</a>
+            <button
+                class="boton-menu"
+                id="boton-menu"
+                type="button"
+                aria-label="Abrir menú"
+                aria-expanded="false"
+                aria-controls="navegacion"
+            >
+                <span class="boton-menu__linea"></span>
+                <span class="boton-menu__linea"></span>
+                <span class="boton-menu__linea"></span>
+            </button>
+        </div>
+
+        <nav class="navegacion" id="navegacion" aria-label="Navegación principal">
+            <ul class="navegacion__lista">
+                <li class="navegacion__item">
+                    <a class="navegacion__enlace" href="index.html">Dashboard</a>
+                </li>
+                <li class="navegacion__item">
+                    <a class="navegacion__enlace navegacion__enlace--activo" href="clientes.html" aria-current="page">Clientes</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="contenido">
+        <div class="cabecera-pagina">
+            <div class="cabecera-pagina__texto">
+                <h1 class="titulo-pagina">Clientes</h1>
+                <p class="subtitulo-pagina">Gestioná los clientes del gimnasio.</p>
+            </div>
+            <button class="boton boton--primario" type="button" id="boton-agregar">+ Agregar cliente</button>
+        </div>
+
+        <!-- Buscador: filtra la tabla/tarjetas mientras se escribe -->
+        <div class="buscador">
+            <span class="buscador__icono" aria-hidden="true">🔍</span>
+            <input
+                class="buscador__input"
+                id="buscador-clientes"
+                type="search"
+                placeholder="Buscar por nombre, apellido o DNI..."
+                autocomplete="off"
+                aria-label="Buscar clientes"
+            />
+        </div>
+
+        <!-- Formulario para agregar cliente (se abre y cierra con JS) -->
+        <section class="panel-formulario" id="panel-formulario" hidden aria-labelledby="titulo-formulario">
+            <div class="panel-formulario__cabecera">
+                <h2 class="panel-formulario__titulo" id="titulo-formulario">Agregar cliente</h2>
+                <button class="boton-accion" type="button" id="boton-cerrar-formulario">Cerrar</button>
+            </div>
+
+            <form class="formulario" id="formulario-cliente" novalidate>
+                <div class="formulario__campo">
+                    <label for="campo-nombre">Nombre</label>
+                    <input type="text" id="campo-nombre" name="nombre" autocomplete="off" required aria-describedby="error-nombre" />
+                    <p class="formulario__error" id="error-nombre" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-apellido">Apellido</label>
+                    <input type="text" id="campo-apellido" name="apellido" autocomplete="off" required aria-describedby="error-apellido" />
+                    <p class="formulario__error" id="error-apellido" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-dni">DNI</label>
+                    <input type="text" id="campo-dni" name="dni" autocomplete="off" inputmode="numeric" required aria-describedby="error-dni" />
+                    <p class="formulario__error" id="error-dni" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-telefono">Teléfono</label>
+                    <input type="tel" id="campo-telefono" name="telefono" autocomplete="off" required aria-describedby="error-telefono" />
+                    <p class="formulario__error" id="error-telefono" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-fechaIngreso">Fecha de ingreso</label>
+                    <input type="date" id="campo-fechaIngreso" name="fechaIngreso" required aria-describedby="error-fechaIngreso" />
+                    <p class="formulario__error" id="error-fechaIngreso" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-cuota">Cuota actual</label>
+                    <input type="number" id="campo-cuota" name="cuota" min="1" step="0.01" inputmode="numeric" required aria-describedby="error-cuota" />
+                    <p class="formulario__error" id="error-cuota" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-fechaVencimiento">Fecha de vencimiento</label>
+                    <input type="date" id="campo-fechaVencimiento" name="fechaVencimiento" required aria-describedby="error-fechaVencimiento" />
+                    <p class="formulario__error" id="error-fechaVencimiento" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-estado">Estado</label>
+                    <select id="campo-estado" name="estado" required aria-describedby="error-estado">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                    <p class="formulario__error" id="error-estado" hidden></p>
+                </div>
+
+                <div class="formulario__acciones">
+                    <button type="submit" class="boton boton--primario" id="boton-guardar-cliente">Guardar cliente</button>
+                    <button type="button" class="boton" id="boton-cancelar-formulario">Cancelar</button>
+                </div>
+            </form>
+        </section>
+
+        <!--
+            Listado de clientes.
+            En desktop será una tabla y en mobile, tarjetas por cliente.
+            El contenido se genera con JavaScript a partir de data.js.
+        -->
+        <section class="listado-clientes" id="listado-clientes" aria-label="Listado de clientes">
+            <p class="listado-clientes__vacio" id="listado-vacio">Aún no hay clientes cargados.</p>
+            <p class="listado-clientes__vacio" id="listado-sin-resultados" hidden>No se encontraron clientes.</p>
+
+            <!-- Tabla de clientes: se muestra en desktop (>= 1024px) -->
+            <div class="listado-table" id="tabla-clientes"></div>
+
+            <!-- Tarjetas de clientes: se muestran en mobile y tablet -->
+            <ul class="listado-cards" id="tarjetas-clientes"></ul>
+        </section>
+    </main>
+
+    <script src="js/navegacion.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/clientes.js"></script>
+</body>
+</html>

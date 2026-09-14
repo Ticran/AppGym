@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Manager — Cliente</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="encabezado">
+        <div class="encabezado__superior">
+            <a class="marca" href="index.html">Gym Manager</a>
+            <button
+                class="boton-menu"
+                id="boton-menu"
+                type="button"
+                aria-label="Abrir menú"
+                aria-expanded="false"
+                aria-controls="navegacion"
+            >
+                <span class="boton-menu__linea"></span>
+                <span class="boton-menu__linea"></span>
+                <span class="boton-menu__linea"></span>
+            </button>
+        </div>
+
+        <nav class="navegacion" id="navegacion" aria-label="Navegación principal">
+            <ul class="navegacion__lista">
+                <li class="navegacion__item">
+                    <a class="navegacion__enlace" href="index.html">Dashboard</a>
+                </li>
+                <li class="navegacion__item">
+                    <a class="navegacion__enlace navegacion__enlace--activo" href="clientes.html" aria-current="page">Clientes</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="contenido">
+        <div class="cabecera-pagina">
+            <div class="cabecera-pagina__texto">
+                <h1 class="titulo-pagina">Ficha del cliente</h1>
+            </div>
+            <a class="boton boton--secundario" href="clientes.html">← Volver a Clientes</a>
+        </div>
+
+        <section id="ficha-detalle" hidden aria-label="Detalle del cliente">
+            <div class="ficha-detalle">
+                <h2 class="ficha-detalle__titulo"></h2>
+                <dl class="ficha-detalle__lista">
+                    <!-- Renderizado dinámico con JavaScript -->
+                </dl>
+            </div>
+        </section>
+
+        <div id="ficha-error" hidden>
+            <p class="ficha-error__mensaje">Cliente no encontrado.</p>
+            <a class="boton boton--secundario" href="clientes.html">← Volver a Clientes</a>
+        </div>
+    </main>
+
+    <script src="js/navegacion.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/clientes.js"></script>
+</body>
+</html>
