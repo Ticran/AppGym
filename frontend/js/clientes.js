@@ -1,10 +1,16 @@
 /*
     clientes.js — Lógica de la página de Clientes (clientes.html).
 
-    Renderiza el array global `clientes` (definido en data.js) como tabla en
+    Renderiza el array global `clientes` (definido en este archivo) como tabla en
     desktop y como tarjetas en mobile. Incluye el buscador, el formulario para
     agregar/editar clientes y la ficha del cliente (cliente.html).
 */
+
+// ---------- Estado ----------
+
+// Listado de clientes en memoria. MongoDB es la fuente de verdad: se llena con
+// la API (cargarClientesDesdeAPI) y NO se persiste en localStorage.
+const clientes = [];
 
 // ---------- Utilidades de formato ----------
 
@@ -20,6 +26,12 @@ function formatearFecha(fechaISO) {
 }
 
 // ---------- Piezas reutilizables ----------
+
+// Identificador de un cliente según su origen:
+// el backend usa el _id de MongoDB; los datos viejos de localStorage, un id numérico.
+function identificarCliente(cliente) {
+    return cliente._id !== undefined ? cliente._id : cliente.id;
+}
 
 function crearEtiquetaEstado(estado) {
     const etiqueta = document.createElement("span");
@@ -50,11 +62,20 @@ function crearBloqueAcciones(cliente) {
     const acciones = document.createElement("div");
     acciones.className = "acciones";
 
-    acciones.appendChild(crearEnlaceVer(cliente.id));
+    acciones.appendChild(crearEnlaceVer(identificarCliente(cliente)));
 
     const botonEditar = crearBotonAccion("Editar");
-    botonEditar.addEventListener("click", () => abrirFormularioEdicion(cliente.id));
+    botonEditar.addEventListener("click", () => abrirFormularioEdicion(identificarCliente(cliente)));
     acciones.appendChild(botonEditar);
+
+    const botonEliminar = crearBotonAccion("Eliminar");
+    botonEliminar.addEventListener("click", () =>
+        abrirModalEliminar(
+            identificarCliente(cliente),
+            cliente.nombre + " " + cliente.apellido
+        )
+    );
+    acciones.appendChild(botonEliminar);
 
     return acciones;
 }
@@ -163,11 +184,20 @@ function crearTarjetaCliente(cliente) {
     // Acciones (Ver / Editar)
     const acciones = document.createElement("div");
     acciones.className = "tarjeta-cliente__acciones";
-    acciones.appendChild(crearEnlaceVer(cliente.id));
+    acciones.appendChild(crearEnlaceVer(identificarCliente(cliente)));
 
     const botonEditar = crearBotonAccion("Editar");
-    botonEditar.addEventListener("click", () => abrirFormularioEdicion(cliente.id));
+    botonEditar.addEventListener("click", () => abrirFormularioEdicion(identificarCliente(cliente)));
     acciones.appendChild(botonEditar);
+
+    const botonEliminar = crearBotonAccion("Eliminar");
+    botonEliminar.addEventListener("click", () =>
+        abrirModalEliminar(
+            identificarCliente(cliente),
+            cliente.nombre + " " + cliente.apellido
+        )
+    );
+    acciones.appendChild(botonEliminar);
 
     item.appendChild(acciones);
 
@@ -204,7 +234,14 @@ function filtrarClientes(texto) {
     });
 }
 
+// Mientras la carga desde la API esté fallando no hay datos válidos que filtrar.
+let errorAlCargarClientes = false;
+
 function manejarBusqueda() {
+    if (errorAlCargarClientes) {
+        return;
+    }
+
     const texto = obtenerTextoBusqueda();
     renderizarClientes(filtrarClientes(texto));
 }
@@ -262,7 +299,8 @@ function abrirFormulario() {
 }
 
 function abrirFormularioEdicion(id) {
-    const cliente = clientes.find((c) => c.id === id);
+    // El id puede ser el _id de MongoDB (string) o el id numérico de datos viejos.
+    const cliente = clientes.find((c) => identificarCliente(c) === id);
     if (!cliente) {
         return;
     }
@@ -304,6 +342,27 @@ function cargarDatosCliente(cliente) {
 function limpiarFormulario() {
     document.getElementById("formulario-cliente").reset();
     mostrarErrores({});
+    mostrarAvisoFormulario("");
+}
+
+// Muestra u oculta el aviso general del formulario (errores no ligados a un campo).
+function mostrarAvisoFormulario(mensaje) {
+    const aviso = document.getElementById("error-formulario");
+
+    if (aviso) {
+        aviso.textContent = mensaje;
+        aviso.hidden = mensaje === "";
+    }
+}
+
+// Muestra u oculta el aviso de éxito del listado (se ve tras cerrar el formulario).
+function mostrarAvisoExito(mensaje) {
+    const aviso = document.getElementById("aviso-exito-listado");
+
+    if (aviso) {
+        aviso.textContent = mensaje;
+        aviso.hidden = mensaje === "";
+    }
 }
 
 // Lee el valor de cada campo y lo devuelve en un objeto.
@@ -325,7 +384,7 @@ function obtenerDatosFormulario() {
 function dniRepetido(dni) {
     const dniBuscado = dni.toLowerCase();
     return clientes.some(
-        (cliente) => cliente.id !== idClienteEnEdicion && cliente.dni.toLowerCase() === dniBuscado
+        (cliente) => identificarCliente(cliente) !== idClienteEnEdicion && cliente.dni.toLowerCase() === dniBuscado
     );
 }
 
@@ -389,88 +448,176 @@ function mostrarErrores(errores) {
     });
 }
 
-// Crea el siguiente id disponible (máximo actual + 1).
-function obtenerProximoId() {
-    if (clientes.length === 0) {
-        return 1;
-    }
-    return Math.max(...clientes.map((cliente) => cliente.id)) + 1;
-}
-
-// Construye el objeto cliente con la misma estructura que los de data.js.
-function crearCliente(clienteParaAgregar) {
+// Construye el body del PUT con los nombres de propiedades del modelo de MongoDB.
+// El formulario usa "cuota"; el backend espera "cuotaActual".
+function construirBodyCliente(datos) {
     return {
-        id: obtenerProximoId(),
-        nombre: clienteParaAgregar.nombre,
-        apellido: clienteParaAgregar.apellido,
-        dni: clienteParaAgregar.dni,
-        telefono: clienteParaAgregar.telefono,
-        fechaIngreso: clienteParaAgregar.fechaIngreso,
-        cuotaActual: clienteParaAgregar.cuota,
-        fechaVencimiento: clienteParaAgregar.fechaVencimiento,
-        estado: clienteParaAgregar.estado,
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        dni: datos.dni,
+        telefono: datos.telefono,
+        fechaIngreso: datos.fechaIngreso,
+        cuotaActual: datos.cuota,
+        fechaVencimiento: datos.fechaVencimiento,
+        estado: datos.estado,
     };
 }
 
-// Actualiza los datos de un cliente existente dentro del array.
-function actualizarCliente(id, datos) {
-    const cliente = clientes.find((c) => c.id === id);
-    if (!cliente) {
-        return;
-    }
+// Reemplaza en la lista local el cliente con los datos devueltos por la API.
+function aplicarClienteActualizado(clienteActualizado) {
+    const indice = clientes.findIndex(
+        (cliente) => identificarCliente(cliente) === identificarCliente(clienteActualizado)
+    );
 
-    cliente.nombre = datos.nombre;
-    cliente.apellido = datos.apellido;
-    cliente.dni = datos.dni;
-    cliente.telefono = datos.telefono;
-    cliente.fechaIngreso = datos.fechaIngreso;
-    cliente.cuotaActual = datos.cuota;
-    cliente.fechaVencimiento = datos.fechaVencimiento;
-    cliente.estado = datos.estado;
+    if (indice !== -1) {
+        clientes[indice] = clienteActualizado;
+    }
 }
 
-function manejarEnvioFormulario(evento) {
+// Evita envíos duplicados mientras la petición PUT está en curso.
+let guardandoCliente = false;
+
+async function manejarEnvioFormulario(evento) {
     evento.preventDefault();
+
+    if (guardandoCliente) {
+        return;
+    }
 
     const datos = obtenerDatosFormulario();
     const errores = validarFormulario(datos);
     mostrarErrores(errores);
+    mostrarAvisoFormulario("");
 
     if (Object.keys(errores).length > 0) {
         return;
     }
 
+    // Creación: el backend es la fuente de verdad (POST /api/clientes).
     if (idClienteEnEdicion === null) {
-        clientes.push(crearCliente(datos));
-    } else {
-        actualizarCliente(idClienteEnEdicion, datos);
+        await crearClienteEnAPI(datos);
+        return;
     }
 
-    // Persiste el listado actualizado (agregar o editar).
-    guardarClientes(clientes);
+    // Edición: el backend es la fuente de verdad. PUT con el _id de MongoDB (string).
+    guardandoCliente = true;
+    const boton = document.getElementById("boton-guardar-cliente");
+    const textoOriginal = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
 
-    cerrarFormulario();
-    renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+    try {
+        const respuesta = await fetch(API_URL_CLIENTES + "/" + idClienteEnEdicion, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(construirBodyCliente(datos)),
+        });
+
+        if (respuesta.status === 400) {
+            const cuerpo = await respuesta.json().catch(() => ({}));
+            const detalles = Array.isArray(cuerpo.detalles) ? cuerpo.detalles.join(" ") : "";
+            mostrarAvisoFormulario(detalles || "Datos inválidos.");
+            return;
+        }
+
+        if (respuesta.status === 404) {
+            mostrarAvisoFormulario("Cliente no encontrado.");
+            return;
+        }
+
+        if (respuesta.status === 409) {
+            mostrarErrores({ dni: "Ya existe un cliente con ese DNI." });
+            return;
+        }
+
+        if (!respuesta.ok) {
+            mostrarAvisoFormulario("No se pudo actualizar el cliente.");
+            return;
+        }
+
+        const clienteActualizado = await respuesta.json();
+
+        // La edición queda registrada en MongoDB: NO se escribe en localStorage.
+        aplicarClienteActualizado(clienteActualizado);
+        cerrarFormulario();
+        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        mostrarAvisoExito("Cliente actualizado correctamente.");
+    } catch (error) {
+        // Falla de red o backend apagado: detalle técnico solo en consola.
+        console.error("No se pudo actualizar el cliente:", error.message);
+        mostrarAvisoFormulario("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+    } finally {
+        guardandoCliente = false;
+        boton.disabled = false;
+        boton.textContent = textoOriginal;
+    }
+}
+
+// Crea el cliente en MongoDB mediante POST /api/clientes.
+// El backend es la fuente de verdad: NO se escribe en localStorage.
+async function crearClienteEnAPI(datos) {
+    guardandoCliente = true;
+    const boton = document.getElementById("boton-guardar-cliente");
+    const textoOriginal = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+
+    try {
+        const respuesta = await fetch(API_URL_CLIENTES, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(construirBodyCliente(datos)),
+        });
+
+        if (respuesta.status === 400) {
+            const cuerpo = await respuesta.json().catch(() => ({}));
+            const detalles = Array.isArray(cuerpo.detalles) ? cuerpo.detalles.join(" ") : "";
+            mostrarAvisoFormulario(detalles || "Datos inválidos.");
+            return;
+        }
+
+        if (respuesta.status === 409) {
+            mostrarErrores({ dni: "Ya existe un cliente con ese DNI." });
+            return;
+        }
+
+        if (!respuesta.ok) {
+            mostrarAvisoFormulario("No se pudo crear el cliente.");
+            return;
+        }
+
+        const clienteCreado = await respuesta.json();
+
+        // Se agrega el documento devuelto por la API (con su _id de MongoDB).
+        clientes.push(clienteCreado);
+        cerrarFormulario();
+        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        mostrarAvisoExito("Cliente creado correctamente.");
+    } catch (error) {
+        // Falla de red o backend apagado: detalle técnico solo en consola.
+        console.error("No se pudo crear el cliente:", error.message);
+        mostrarAvisoFormulario("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+    } finally {
+        guardandoCliente = false;
+        boton.disabled = false;
+        boton.textContent = textoOriginal;
+    }
 }
 
 // ---------- Ficha del cliente (cliente.html) ----------
 
-// Obtiene el id de la URL (?id=3 → 3). Devuelve null si falta o no es numérico.
+// Obtiene el id de la URL como string (?id=6aab... → "6aab...").
+// Devuelve null si falta el parámetro. El _id de MongoDB NO se convierte a número.
 function obtenerIdDesdeUrl() {
     const parametros = new URLSearchParams(window.location.search);
     const idTexto = parametros.get("id");
 
-    if (idTexto === null) {
-        return null;
-    }
-
-    const id = Number(idTexto);
-    return Number.isInteger(id) ? id : null;
+    return idTexto !== null && idTexto !== "" ? idTexto : null;
 }
 
-// Busca un cliente por id dentro del array global `clientes`.
-function buscarClientePorId(id) {
-    return clientes.find((cliente) => cliente.id === id) || null;
+// Comprueba que el id tenga el formato de un ObjectId de MongoDB (24 caracteres hexadecimales).
+function esFormatoIdValido(id) {
+    return typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id);
 }
 
 // Crea una fila <div class="ficha-detalle__fila"> con <dt> y <dd> usando DOM seguro.
@@ -526,30 +673,234 @@ function renderizarFicha(cliente) {
     lista.appendChild(filaEstado);
 }
 
-// Muestra el mensaje "Cliente no encontrado." y oculta la ficha.
-function mostrarErrorFicha() {
+// Muestra un mensaje de error de la ficha y oculta el detalle.
+function mostrarErrorFicha(mensaje) {
     const detalle = document.getElementById("ficha-detalle");
     const error = document.getElementById("ficha-error");
+    const cargando = document.getElementById("ficha-cargando");
 
     detalle.hidden = true;
+
+    if (cargando) {
+        cargando.hidden = true;
+    }
+
     error.hidden = false;
-    error.querySelector(".ficha-error__mensaje").textContent = "Cliente no encontrado.";
+    error.querySelector(".ficha-error__mensaje").textContent = mensaje;
 }
 
-// Inicializa la ficha del cliente al cargar cliente.html.
-function inicializarFichaCliente() {
+// Obtiene un cliente desde la API y renderiza su ficha (cliente.html).
+// Estados: cargando / cliente encontrado / no encontrado (404) /
+// id inválido (400) / backend apagado o error de red / error inesperado.
+async function inicializarFichaCliente() {
     // Solo corre en la página de ficha del cliente
-    if (!document.getElementById("ficha-detalle")) {
+    const detalle = document.getElementById("ficha-detalle");
+
+    if (!detalle) {
         return;
     }
 
+    const cargando = document.getElementById("ficha-cargando");
     const id = obtenerIdDesdeUrl();
-    const cliente = id !== null ? buscarClientePorId(id) : null;
 
-    if (cliente) {
+    // Sin id en la URL o con formato inválido: no se consulta el backend.
+    if (id === null) {
+        mostrarErrorFicha("Cliente no encontrado.");
+        return;
+    }
+
+    if (!esFormatoIdValido(id)) {
+        mostrarErrorFicha("ID de cliente inválido.");
+        return;
+    }
+
+    if (cargando) {
+        cargando.hidden = false;
+    }
+
+    try {
+        const respuesta = await fetch(API_URL_CLIENTES + "/" + id);
+
+        if (!respuesta.ok) {
+            if (respuesta.status === 404) {
+                mostrarErrorFicha("Cliente no encontrado.");
+            } else if (respuesta.status === 400) {
+                mostrarErrorFicha("ID de cliente inválido.");
+            } else {
+                mostrarErrorFicha("No se pudo obtener el cliente.");
+            }
+            return;
+        }
+
+        const cliente = await respuesta.json();
+
+        if (cliente === null || typeof cliente !== "object") {
+            mostrarErrorFicha("Cliente no encontrado.");
+            return;
+        }
+
+        if (cargando) {
+            cargando.hidden = true;
+        }
+
         renderizarFicha(cliente);
-    } else {
-        mostrarErrorFicha();
+    } catch (error) {
+        // Falla de red o backend apagado: detalle técnico solo en consola.
+        console.error("No se pudo obtener el cliente:", error.message);
+        mostrarErrorFicha("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+    }
+}
+
+// ---------- Carga de clientes desde la API ----------
+
+// Endpoint del backend que devuelve todos los clientes.
+const API_URL_CLIENTES = "http://localhost:3000/api/clientes";
+
+// Muestra u oculta un mensaje de estado del listado.
+function mostrarMensaje(id, visible) {
+    const mensaje = document.getElementById(id);
+
+    if (mensaje) {
+        mensaje.hidden = !visible;
+    }
+}
+
+// Pide los clientes al backend y los muestra en el listado.
+// Los datos recibidos NO se guardan en localStorage: la API es la fuente
+// de datos de esta página.
+async function cargarClientesDesdeAPI() {
+    errorAlCargarClientes = false;
+    mostrarMensaje("listado-cargando", true);
+    mostrarMensaje("listado-vacio", false);
+    mostrarMensaje("listado-error", false);
+
+    try {
+        const respuesta = await fetch(API_URL_CLIENTES);
+
+        // Error HTTP (4xx / 5xx): se corta antes de intentar leer el JSON.
+        if (!respuesta.ok) {
+            throw new Error("Respuesta HTTP " + respuesta.status);
+        }
+
+        const datos = await respuesta.json();
+        const lista = Array.isArray(datos) ? datos : [];
+
+        // Los clientes del backend pasan a ser la lista que ya usan el
+        // buscador, la tabla y las tarjetas. No se modifican los documentos.
+        clientes.length = 0;
+        lista.forEach((cliente) => clientes.push(cliente));
+
+        mostrarMensaje("listado-cargando", false);
+        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+    } catch (error) {
+        // Detalle técnico solo para depuración en consola.
+        console.error("No se pudieron cargar los clientes:", error.message);
+
+        errorAlCargarClientes = true;
+
+        document.getElementById("tabla-clientes").replaceChildren();
+        document.getElementById("tarjetas-clientes").replaceChildren();
+
+        mostrarMensaje("listado-cargando", false);
+        mostrarMensaje("listado-vacio", false);
+        mostrarMensaje("listado-sin-resultados", false);
+        mostrarMensaje("listado-error", true);
+    }
+}
+
+// ---------- Eliminación de clientes ----------
+
+let idClienteAEliminar = null;
+let eliminandoCliente = false;
+
+// Muestra el modal de confirmación con los datos del cliente a eliminar.
+function abrirModalEliminar(id, nombreApellido) {
+    idClienteAEliminar = id;
+
+    const texto = document.getElementById("modal-eliminar-texto");
+    const botonConfirmar = document.getElementById("modal-eliminar-confirmar");
+    const modal = document.getElementById("modal-eliminar");
+
+    if (texto) {
+        texto.textContent = "¿Eliminar el cliente " + nombreApellido + "? Esta acción no se puede deshacer.";
+    }
+
+    if (botonConfirmar) {
+        botonConfirmar.disabled = false;
+        botonConfirmar.textContent = "Eliminar";
+    }
+
+    if (modal && typeof modal.showModal === "function") {
+        modal.showModal();
+    }
+}
+
+// Muestra un mensaje en el aviso del listado (éxito o error de eliminación).
+function mostrarMensajeListado(mensaje) {
+    const aviso = document.getElementById("aviso-exito-listado");
+
+    if (aviso) {
+        aviso.textContent = mensaje;
+        aviso.hidden = mensaje === "";
+    }
+}
+
+// Quita del array local un cliente por su identificador (si está).
+function quitarClienteDeLaLista(id) {
+    const indice = clientes.findIndex((cliente) => identificarCliente(cliente) === id);
+
+    if (indice !== -1) {
+        clientes.splice(indice, 1);
+    }
+}
+
+// Elimina un cliente en MongoDB mediante DELETE /api/clientes/:id.
+async function eliminarClienteEnAPI(id) {
+    eliminandoCliente = true;
+    const botonConfirmar = document.getElementById("modal-eliminar-confirmar");
+    const textoOriginal = botonConfirmar ? botonConfirmar.textContent : "Eliminar";
+
+    if (botonConfirmar) {
+        botonConfirmar.disabled = true;
+        botonConfirmar.textContent = "Eliminando...";
+    }
+
+    try {
+        const respuesta = await fetch(API_URL_CLIENTES + "/" + id, { method: "DELETE" });
+
+        if (respuesta.status === 404) {
+            // Ya no existe (por ejemplo, eliminado en otra pestaña): se quita de la vista.
+            quitarClienteDeLaLista(id);
+            renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+            mostrarMensajeListado("El cliente no fue encontrado. Puede que ya se haya eliminado.");
+            return;
+        }
+
+        if (respuesta.status === 400) {
+            mostrarMensajeListado("ID de cliente inválido.");
+            return;
+        }
+
+        if (!respuesta.ok) {
+            mostrarMensajeListado("No se pudo eliminar el cliente.");
+            return;
+        }
+
+        // 200: el backend confirma el borrado definitivo en MongoDB.
+        quitarClienteDeLaLista(id);
+        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        mostrarMensajeListado("Cliente eliminado correctamente.");
+    } catch (error) {
+        // Falla de red o backend apagado: detalle técnico solo en consola.
+        console.error("No se pudo eliminar el cliente:", error.message);
+        mostrarMensajeListado("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+    } finally {
+        eliminandoCliente = false;
+
+        if (botonConfirmar) {
+            botonConfirmar.disabled = false;
+            botonConfirmar.textContent = textoOriginal;
+        }
     }
 }
 
@@ -569,6 +920,39 @@ if (botonAgregar) {
     botonAgregar.addEventListener("click", abrirFormulario);
 }
 
+// Wiring del modal de eliminación.
+const modalEliminar = document.getElementById("modal-eliminar");
+const botonEliminarCancelar = document.getElementById("modal-eliminar-cancelar");
+const botonEliminarConfirmar = document.getElementById("modal-eliminar-confirmar");
+
+if (botonEliminarCancelar) {
+    botonEliminarCancelar.addEventListener("click", () => {
+        idClienteAEliminar = null;
+
+        if (modalEliminar && typeof modalEliminar.close === "function") {
+            modalEliminar.close();
+        }
+    });
+}
+
+if (botonEliminarConfirmar) {
+    botonEliminarConfirmar.addEventListener("click", async () => {
+        // Protección anti-doble envío: el DELETE se ejecuta una sola vez.
+        if (eliminandoCliente || idClienteAEliminar === null) {
+            return;
+        }
+
+        const id = idClienteAEliminar;
+        idClienteAEliminar = null;
+
+        if (modalEliminar && typeof modalEliminar.close === "function") {
+            modalEliminar.close();
+        }
+
+        await eliminarClienteEnAPI(id);
+    });
+}
+
 if (botonCerrarFormulario) {
     botonCerrarFormulario.addEventListener("click", cerrarFormulario);
 }
@@ -581,9 +965,9 @@ if (formularioCliente) {
     formularioCliente.addEventListener("submit", manejarEnvioFormulario);
 }
 
-// clientes.html es la página con el listado; en otras páginas no se renderiza.
+// clientes.html es la página con el listado; en otras páginas no se consulta.
 if (document.getElementById("listado-clientes")) {
-    renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+    cargarClientesDesdeAPI();
 }
 
 // cliente.html es la página de ficha del cliente; en otras páginas no se inicializa.
