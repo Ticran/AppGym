@@ -491,6 +491,29 @@ body {
     border-color: var(--color-primary-soft);
 }
 
+/* Ver / Editar / Eliminar: exactamente el mismo tamaño dentro de la tabla.
+   El min-width supera el ancho natural de "Eliminar" (el texto más largo),
+   así los tres botones miden lo mismo y el texto nunca se corta. */
+.acciones .boton-accion {
+    min-width: 6rem;
+    white-space: nowrap;
+}
+
+/* Si no entran los tres botones, el grupo baja de línea en lugar de empujar la celda. */
+.acciones {
+    flex-wrap: wrap;
+}
+
+/* En desktop de ancho justo (1024-1279px) las celdas se compactan para que
+   la tabla quepa mejor y la columna Acciones quede a la vista sin scroll.
+   En anchos mayores se conserva el padding estándar. */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+    .tabla-clientes th,
+    .tabla-clientes td {
+        padding: 0.625rem 0.5rem;
+    }
+}
+
 /* ---------- Tarjetas principales ---------- */
 
 .tarjetas {
@@ -666,6 +689,7 @@ body {
 
     .contenido {
         flex: 1;
+        min-width: 0;
         padding: 2rem;
     }
 
