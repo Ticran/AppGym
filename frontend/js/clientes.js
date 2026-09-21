@@ -754,7 +754,8 @@ async function inicializarFichaCliente() {
 // ---------- Carga de clientes desde la API ----------
 
 // Endpoint del backend que devuelve todos los clientes.
-const API_URL_CLIENTES = "http://localhost:3000/api/clientes";
+// La URL base de la API vive en js/api.js (única fuente de la dirección).
+const API_URL_CLIENTES = API_BASE_URL + "/clientes";
 
 // Muestra u oculta un mensaje de estado del listado.
 function mostrarMensaje(id, visible) {

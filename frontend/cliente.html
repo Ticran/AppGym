@@ -41,7 +41,11 @@
             <div class="cabecera-pagina__texto">
                 <h1 class="titulo-pagina">Ficha del cliente</h1>
             </div>
-            <a class="boton boton--secundario" href="clientes.html">← Volver a Clientes</a>
+            <div class="cabecera-pagina__acciones">
+                <!-- Abre el panel de registro de pago (se muestra con JS) -->
+                <button class="boton boton--primario" type="button" id="boton-abrir-pago">Registrar pago</button>
+                <a class="boton boton--secundario" href="clientes.html">← Volver a Clientes</a>
+            </div>
         </div>
 
         <section id="ficha-detalle" hidden aria-label="Detalle del cliente">
@@ -61,9 +65,92 @@
             <p class="ficha-error__mensaje">Cliente no encontrado.</p>
             <a class="boton boton--secundario" href="clientes.html">← Volver a Clientes</a>
         </div>
+
+        <!--
+            Registro de pago del cliente.
+            Está oculto hasta que el dueño presiona "Registrar pago": recién ahí
+            se consulta el cliente en la API y se completa el formulario.
+        -->
+        <section class="panel-formulario panel-pago" id="panel-pago" hidden aria-labelledby="titulo-formulario-pago">
+            <div class="panel-formulario__cabecera">
+                <h2 class="panel-formulario__titulo" id="titulo-formulario-pago">Registrar pago</h2>
+                <button class="boton-accion" type="button" id="boton-cerrar-pago">Cerrar</button>
+            </div>
+
+            <p class="panel-pago__cliente" id="pago-cliente-cargando" hidden>Cargando datos del cliente...</p>
+            <p class="panel-pago__cliente" id="pago-cliente" hidden></p>
+
+            <form class="formulario" id="formulario-pago" novalidate>
+                <div class="formulario__campo">
+                    <label for="campo-pago-mes">Mes</label>
+                    <select id="campo-pago-mes" name="mes" required aria-describedby="error-pago-mes"></select>
+                    <p class="formulario__error" id="error-pago-mes" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-pago-anio">Año</label>
+                    <select id="campo-pago-anio" name="anio" required aria-describedby="error-pago-anio"></select>
+                    <p class="formulario__error" id="error-pago-anio" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-pago-fecha">Fecha de pago</label>
+                    <input type="date" id="campo-pago-fecha" name="fechaPago" required aria-describedby="error-pago-fecha" />
+                    <p class="formulario__error" id="error-pago-fecha" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-pago-cuota">Cuota de este mes</label>
+                    <input type="number" id="campo-pago-cuota" name="importeCuota" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="ayuda-pago-cuota error-pago-cuota" />
+                    <p class="formulario__ayuda" id="ayuda-pago-cuota">Se completa con la cuota actual del cliente. Cambiarla acá no modifica la cuota actual del cliente.</p>
+                    <p class="formulario__error" id="error-pago-cuota" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-pago-porcentaje">Recargo (%)</label>
+                    <input type="number" id="campo-pago-porcentaje" name="porcentajeRecargo" min="0" step="0.01" inputmode="decimal" required aria-describedby="ayuda-pago-porcentaje error-pago-porcentaje" />
+                    <p class="formulario__ayuda" id="ayuda-pago-porcentaje">El valor sugerido es 0% hasta el día 10 y 10% desde el día 11. Con 0% no hay recargo.</p>
+                    <p class="formulario__error" id="error-pago-porcentaje" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-pago-nueva-cuota">Nueva cuota del mes siguiente (opcional)</label>
+                    <input type="number" id="campo-pago-nueva-cuota" name="nuevaCuotaMesSiguiente" min="0.01" step="0.01" inputmode="decimal" aria-describedby="ayuda-pago-nueva-cuota error-pago-nueva-cuota" />
+                    <p class="formulario__ayuda" id="ayuda-pago-nueva-cuota">Queda guardada en el pago como dato para el mes próximo. No cambia la cuota actual del cliente.</p>
+                    <p class="formulario__error" id="error-pago-nueva-cuota" hidden></p>
+                </div>
+
+                <!-- Resumen de importes. El backend recalcula y valida estos valores. -->
+                <div class="resumen-pago" id="resumen-pago">
+                    <p class="resumen-pago__fila">
+                        <span class="resumen-pago__etiqueta">Cuota</span>
+                        <span class="resumen-pago__valor" id="resumen-pago-cuota">—</span>
+                    </p>
+                    <p class="resumen-pago__fila">
+                        <span class="resumen-pago__etiqueta" id="resumen-pago-etiqueta-recargo">Recargo</span>
+                        <span class="resumen-pago__valor" id="resumen-pago-recargo">—</span>
+                    </p>
+                    <p class="resumen-pago__fila resumen-pago__fila--total">
+                        <span class="resumen-pago__etiqueta">Total a pagar</span>
+                        <span class="resumen-pago__valor" id="resumen-pago-total">—</span>
+                    </p>
+                </div>
+
+                <!-- Mensajes de éxito o error del registro -->
+                <p class="aviso-pago" id="pago-mensaje" hidden role="status" aria-live="polite"></p>
+
+                <div class="formulario__acciones">
+                    <button type="submit" class="boton boton--primario" id="boton-guardar-pago">Registrar pago</button>
+                    <button type="button" class="boton" id="boton-cancelar-pago">Cancelar</button>
+                </div>
+            </form>
+        </section>
     </main>
 
+    <script src="js/api.js"></script>
     <script src="js/navegacion.js"></script>
     <script src="js/clientes.js"></script>
+    <!-- Registro de pagos: se apoya en api.js y en funciones de clientes.js -->
+    <script src="js/pagos.js"></script>
 </body>
 </html>

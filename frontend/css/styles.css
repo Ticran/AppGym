@@ -772,3 +772,102 @@ body {
         flex: 0 0 180px;
     }
 }
+
+/* ---------- Registro de pagos (cliente.html) ---------- */
+
+/* Botón "Registrar pago" junto al de volver a clientes */
+.cabecera-pagina__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Panel de registro: aparece debajo de la ficha del cliente */
+.panel-pago {
+    margin-top: 1.5rem;
+}
+
+.panel-pago__cliente {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background-color: var(--color-background);
+    font-weight: 600;
+}
+
+/* Resumen de importes calculados (cuota, recargo y total) */
+.resumen-pago {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-borde);
+}
+
+.resumen-pago__fila {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0;
+}
+
+.resumen-pago__etiqueta {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.resumen-pago__valor {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.resumen-pago__fila--total {
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.resumen-pago__fila--total .resumen-pago__etiqueta {
+    font-weight: 600;
+}
+
+.resumen-pago__fila--total .resumen-pago__valor {
+    font-size: 1.15rem;
+    color: var(--color-primary);
+}
+
+/* Aclaraciones debajo de los campos del formulario */
+.formulario__ayuda {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+/* Mensajes de éxito o error del registro de pago */
+.aviso-pago {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.aviso-pago--exito {
+    color: var(--color-success);
+    background-color: rgba(22, 163, 74, 0.12);
+}
+
+.aviso-pago--error {
+    color: var(--color-danger);
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+/* En tablet/desktop el formulario es una grilla de dos columnas:
+   el resumen y los mensajes ocupan todo el ancho */
+@media (min-width: 640px) {
+    .resumen-pago,
+    .aviso-pago {
+        grid-column: 1 / -1;
+    }
+}
