@@ -882,6 +882,13 @@ async function eliminarClienteEnAPI(id) {
             return;
         }
 
+        if (respuesta.status === 409) {
+            // El backend bloquea la eliminación: el cliente tiene pagos
+            // registrados. No se lo quita de la lista y sus pagos quedan intactos.
+            mostrarMensajeListado("No se puede eliminar este cliente porque tiene pagos registrados.");
+            return;
+        }
+
         if (!respuesta.ok) {
             mostrarMensajeListado("No se pudo eliminar el cliente.");
             return;

@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const Cliente = require('../models/Cliente');
+// Necesario para comprobar si un cliente tiene pagos antes de eliminarlo.
+const Pago = require('../models/Pago');
 
 // Campos que se pueden editar desde el endpoint. El `_id` no está en la lista,
 // así que nunca se puede modificar.
@@ -170,7 +172,11 @@ async function obtenerClientePorId(req, res) {
 
 /*
   DELETE /api/clientes/:id
-  Elimina UN SOLO cliente (el del _id indicado). No toca ningún otro documento.
+  Elimina UN SOLO cliente (el del _id indicado), SIEMPRE que no tenga pagos
+  registrados: los pagos son el historial del gimnasio y no pueden quedar
+  huérfanos ni borrarse en cascada. La comprobación usa Pago.exists, que se
+  apoya en el índice { cliente, anio, mes }: es una consulta de existencia y
+  no carga ningún pago en memoria.
 */
 async function eliminarCliente(req, res) {
   try {
@@ -180,6 +186,17 @@ async function eliminarCliente(req, res) {
     // MongoDB de forma innecesaria.
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'ID de cliente inválido' });
+    }
+
+    // El cliente con pagos no se puede eliminar: se bloquea con 409.
+    const tienePagos = await Pago.exists({ cliente: id });
+
+    if (tienePagos) {
+      console.error('Intento de eliminar un cliente con pagos registrados');
+      return res.status(409).json({
+        error: 'No se puede eliminar el cliente',
+        detalles: ['El cliente tiene pagos registrados y no puede ser eliminado'],
+      });
     }
 
     const cliente = await Cliente.findByIdAndDelete(id);
