@@ -871,3 +871,136 @@ body {
         grid-column: 1 / -1;
     }
 }
+
+/* ---------- Historial de pagos (cliente.html) ---------- */
+
+.historial-pagos {
+    margin-top: 1.5rem;
+}
+
+/* Tabla: solo en desktop (>= 1024px), igual que el listado de clientes */
+.historial-pagos__tabla {
+    display: none;
+    overflow-x: auto;
+}
+
+.historial-pagos__tabla-interna {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.historial-pagos__tabla-interna th,
+.historial-pagos__tabla-interna td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.historial-pagos__tabla-interna th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+}
+
+/* Tarjetas de pagos: mobile y tablet */
+.historial-pagos__cards {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.historial-pago {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-borde);
+}
+
+.historial-pago__encabezado {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.historial-pago__periodo {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.historial-pago__total {
+    font-weight: 700;
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.historial-pago__datos {
+    margin: 0;
+}
+
+.historial-pago__dato {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.historial-pago__dato:last-child {
+    border-bottom: none;
+}
+
+.historial-pago__dato dt {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+}
+
+.historial-pago__dato dd {
+    margin: 0;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Modal de edición de un pago: ancho cómodo en cualquier pantalla */
+.modal-editar-pago {
+    width: min(92vw, 480px);
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-borde);
+    padding: 1.5rem;
+}
+
+.modal-editar-pago::backdrop {
+    background-color: rgba(31, 41, 55, 0.5);
+}
+
+/* En desktop la tabla reemplaza a las tarjetas */
+@media (min-width: 1024px) {
+    .historial-pagos__tabla {
+        display: block;
+    }
+
+    .historial-pagos__cards {
+        display: none;
+    }
+}
+
+/* El atributo hidden debe ganar siempre: historial.js lo usa para alternar
+   entre carga, vacío, error y listado */
+.historial-pagos__tabla[hidden],
+.historial-pagos__cards[hidden] {
+    display: none;
+}

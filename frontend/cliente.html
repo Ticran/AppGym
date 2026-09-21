@@ -145,6 +145,111 @@
                 </div>
             </form>
         </section>
+        <!--
+            Historial de pagos del cliente.
+            Se carga con JavaScript desde GET /api/clientes/:id/pagos.
+            En desktop muestra una tabla y en mobile, tarjetas por pago.
+        -->
+        <section class="panel-formulario historial-pagos" id="historial-pagos" aria-labelledby="titulo-historial">
+            <h2 class="panel-formulario__titulo" id="titulo-historial">Historial de pagos</h2>
+
+            <p class="listado-clientes__vacio" id="historial-cargando" hidden>Cargando historial...</p>
+            <p class="listado-clientes__vacio" id="historial-vacio" hidden>
+                Este cliente todavía no tiene pagos registrados.
+            </p>
+            <p class="listado-clientes__vacio" id="historial-error" hidden>
+                No se pudieron cargar los pagos.
+            </p>
+            <p class="aviso-pago" id="historial-mensaje" hidden role="status" aria-live="polite"></p>
+
+            <!-- Tabla de pagos: se muestra en desktop (>= 1024px) -->
+            <div class="historial-pagos__tabla" id="historial-tabla"></div>
+
+            <!-- Tarjetas de pagos: se muestran en mobile y tablet -->
+            <ul class="historial-pagos__cards" id="historial-cards"></ul>
+        </section>
+
+        <!-- Modal de confirmación para eliminar un pago (nativo, como en clientes.html) -->
+        <dialog id="modal-eliminar-pago">
+            <p id="modal-eliminar-pago-texto"></p>
+            <div>
+                <button type="button" id="modal-eliminar-pago-cancelar" class="boton boton--secundario">Cancelar</button>
+                <button type="button" id="modal-eliminar-pago-confirmar" class="boton-accion">Eliminar</button>
+            </div>
+        </dialog>
+        <!--
+            Modal de edición de un pago.
+            Reutiliza las mismas reglas del registro: el backend es la autoridad.
+            El cliente del pago NO se puede cambiar: el pago pertenece a la ficha
+            que se está consultando.
+        -->
+        <dialog class="modal-editar-pago" id="modal-editar-pago">
+            <form class="formulario" id="formulario-editar-pago" novalidate>
+                <div class="panel-formulario__cabecera">
+                    <h2 class="panel-formulario__titulo" id="titulo-editar-pago">Editar pago</h2>
+                    <button class="boton-accion" type="button" id="boton-cerrar-edicion-pago">Cerrar</button>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-editar-pago-mes">Mes</label>
+                    <select id="campo-editar-pago-mes" name="mes" required aria-describedby="error-editar-pago-mes"></select>
+                    <p class="formulario__error" id="error-editar-pago-mes" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-editar-pago-anio">Año</label>
+                    <select id="campo-editar-pago-anio" name="anio" required aria-describedby="error-editar-pago-anio"></select>
+                    <p class="formulario__error" id="error-editar-pago-anio" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-editar-pago-fecha">Fecha de pago</label>
+                    <input type="date" id="campo-editar-pago-fecha" name="fechaPago" required aria-describedby="error-editar-pago-fecha" />
+                    <p class="formulario__error" id="error-editar-pago-fecha" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-editar-pago-cuota">Cuota de este mes</label>
+                    <input type="number" id="campo-editar-pago-cuota" name="importeCuota" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="error-editar-pago-cuota" />
+                    <p class="formulario__error" id="error-editar-pago-cuota" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-editar-pago-porcentaje">Recargo (%)</label>
+                    <input type="number" id="campo-editar-pago-porcentaje" name="porcentajeRecargo" min="0" step="0.01" inputmode="decimal" required aria-describedby="error-editar-pago-porcentaje" />
+                    <p class="formulario__error" id="error-editar-pago-porcentaje" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-editar-pago-nueva-cuota">Nueva cuota del mes siguiente (opcional)</label>
+                    <input type="number" id="campo-editar-pago-nueva-cuota" name="nuevaCuotaMesSiguiente" min="0.01" step="0.01" inputmode="decimal" aria-describedby="error-editar-pago-nueva-cuota" />
+                    <p class="formulario__error" id="error-editar-pago-nueva-cuota" hidden></p>
+                </div>
+
+                <!-- Resumen de importes: el backend recalcula y valida estos valores -->
+                <div class="resumen-pago" id="resumen-editar-pago">
+                    <p class="resumen-pago__fila">
+                        <span class="resumen-pago__etiqueta">Cuota</span>
+                        <span class="resumen-pago__valor" id="resumen-editar-pago-cuota">—</span>
+                    </p>
+                    <p class="resumen-pago__fila">
+                        <span class="resumen-pago__etiqueta">Recargo</span>
+                        <span class="resumen-pago__valor" id="resumen-editar-pago-recargo">—</span>
+                    </p>
+                    <p class="resumen-pago__fila resumen-pago__fila--total">
+                        <span class="resumen-pago__etiqueta">Total a pagar</span>
+                        <span class="resumen-pago__valor" id="resumen-editar-pago-total">—</span>
+                    </p>
+                </div>
+
+                <p class="aviso-pago" id="editar-pago-mensaje" hidden role="status" aria-live="polite"></p>
+
+                <div class="formulario__acciones">
+                    <button type="submit" class="boton boton--primario" id="boton-guardar-edicion-pago">Guardar cambios</button>
+                    <button type="button" class="boton" id="boton-cancelar-edicion-pago">Cancelar</button>
+                </div>
+            </form>
+        </dialog>
     </main>
 
     <script src="js/api.js"></script>
@@ -152,5 +257,7 @@
     <script src="js/clientes.js"></script>
     <!-- Registro de pagos: se apoya en api.js y en funciones de clientes.js -->
     <script src="js/pagos.js"></script>
+    <!-- Historial de pagos: se apoya en api.js, clientes.js y las utilidades de pagos.js -->
+    <script src="js/historial.js"></script>
 </body>
 </html>

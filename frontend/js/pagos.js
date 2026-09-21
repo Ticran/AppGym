@@ -510,6 +510,10 @@ async function pagoManejarEnvio(evento) {
             // Se deja el formulario listo para el próximo registro.
             pagoPrepararFormulario();
             pagoMostrarMensaje("Pago registrado " + detalle + ". La cuota actual del cliente no cambió.", "exito");
+
+            // El historial de la ficha escucha este evento para refrescarse
+            // sin recargar la página (lo maneja historial.js).
+            document.dispatchEvent(new CustomEvent("pago-registrado"));
             return;
         }
 
