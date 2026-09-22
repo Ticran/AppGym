@@ -13,9 +13,12 @@
 */
 
 // URL base de la API (incluye el prefijo /api).
-const API_BASE_URL = "http://localhost:3000/api";
+// Es RELATIVA a propósito: el frontend se sirve desde el mismo origen que la
+// API (Express), así la misma línea funciona en desarrollo
+// (http://localhost:3000) y en producción (https://dominio), sin cambiar código.
+const API_BASE_URL = "/api";
 
-// Arma la URL completa de un recurso: urlDeAPI("/pagos") -> "http://localhost:3000/api/pagos".
+// Arma la URL completa de un recurso: urlDeAPI("/pagos") -> "/api/pagos".
 function urlDeAPI(ruta) {
     return API_BASE_URL + ruta;
 }

@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -10,6 +11,19 @@ const authRoutes = require('./routes/authRoutes');
 const { requireAuth, verificarConfiguracion } = require('./middleware/auth');
 
 const app = express();
+
+// No se expone el framework en las cabeceras de las respuestas.
+app.disable('x-powered-by');
+
+/*
+  Detrás del proxy del hosting (Render y similares) hay que confiar en el primer
+  salto para que req.ip sea la IP real del cliente: lo usa el limitador de
+  intentos de login. Solo se activa en producción, así el comportamiento en
+  desarrollo local queda exactamente igual que hasta ahora.
+*/
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 verificarConfiguracion();
 
@@ -66,5 +80,14 @@ app.use('/api/auth', authRoutes);
 // válida, TODOS los endpoints de clientes y pagos responden 401.
 app.use('/api/clientes', requireAuth, clientesRoutes);
 app.use('/api/pagos', requireAuth, pagosRoutes);
+
+/*
+  Producción: Express sirve el frontend desde el MISMO origen que la API, así la
+  cookie de sesión sigue siendo same-site (SameSite=Strict) y no se depende de
+  CORS. Va DESPUÉS de todas las rutas /api para que la API tenga prioridad.
+  Se apunta únicamente a frontend/: nunca a la raíz del repositorio, que
+  contiene backend/.env, node_modules y .git.
+*/
+app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
 
 module.exports = app;
