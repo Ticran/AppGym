@@ -39,20 +39,28 @@
     <main class="contenido">
         <h1 class="titulo-pagina">Dashboard</h1>
 
-        <!-- Tarjetas principales (se generan con JS) -->
-        <section class="tarjetas" id="tarjetas" aria-label="Resumen general del gimnasio"></section>
+        <!-- Estado de carga: visible hasta que la API responde -->
+        <p class="listado-clientes__vacio" id="dashboard-cargando">Cargando datos del Dashboard...</p>
 
-        <div class="columnas">
-            <!-- Últimos pagos (datos simulados) -->
+        <!-- Estado de error: nunca se muestran valores simulados como respaldo -->
+        <p class="aviso-pago aviso-pago--error" id="dashboard-error" hidden role="alert"></p>
+
+        <!-- Tarjetas principales: se generan con JS a partir de la API -->
+        <section class="tarjetas" id="tarjetas" aria-label="Resumen general del gimnasio" hidden></section>
+
+        <div class="columnas" id="columnas-dashboard" hidden>
+            <!-- Últimos pagos: datos reales de la API -->
             <section class="panel" aria-labelledby="titulo-ultimos-pagos">
                 <h2 class="panel__titulo" id="titulo-ultimos-pagos">Últimos pagos</h2>
+                <p class="listado-clientes__vacio" id="ultimos-pagos-vacio" hidden>Todavía no hay pagos registrados.</p>
                 <ul class="lista" id="lista-ultimos-pagos"></ul>
             </section>
 
-            <!-- Próximos vencimientos (datos simulados) -->
-            <section class="panel" aria-labelledby="titulo-proximos-vencimientos">
-                <h2 class="panel__titulo" id="titulo-proximos-vencimientos">Próximos vencimientos</h2>
-                <ul class="lista" id="lista-proximos-vencimientos"></ul>
+            <!-- Pendientes de pago: datos reales de la API -->
+            <section class="panel" aria-labelledby="titulo-pendientes">
+                <h2 class="panel__titulo" id="titulo-pendientes">Pendientes de pago</h2>
+                <p class="listado-clientes__vacio" id="pendientes-vacio" hidden>No hay cuotas pendientes este mes.</p>
+                <ul class="lista" id="lista-pendientes"></ul>
             </section>
         </div>
     </main>

@@ -522,6 +522,14 @@ body {
     gap: 1rem;
 }
 
+/* Los contenedores del Dashboard se ocultan con el atributo `hidden` hasta que
+   la API responde. Hace falta la regla porque .tarjetas y .columnas definen su
+   propio display, que gana sobre el display:none del atributo. */
+.tarjetas[hidden],
+.columnas[hidden] {
+    display: none;
+}
+
 .tarjeta {
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -540,12 +548,8 @@ body {
     border-left-color: var(--color-primary);
 }
 
-.tarjeta--deuda {
+.tarjeta--pendientes {
     border-left-color: var(--color-danger);
-}
-
-.tarjeta--vencimientos {
-    border-left-color: var(--color-warning);
 }
 
 .tarjeta__valor {
@@ -610,6 +614,13 @@ body {
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+}
+
+/* Importe y fecha de un pago, como un bloque alineado a la derecha de la fila. */
+.item-lista__valores {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
 }
 
 /* ---------- Tablet (>= 640px) ---------- */
@@ -694,7 +705,7 @@ body {
     }
 
     .tarjetas {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .columnas {
