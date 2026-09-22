@@ -1010,6 +1010,7 @@ body {
 /* Contenedor angosto y centrado: el resto de .contenido no cambia */
 .contenido--login {
     max-width: 480px;
+    justify-content: center;
 }
 
 .panel-login {
