@@ -507,14 +507,14 @@ async function manejarEnvioFormulario(evento) {
     boton.textContent = "Guardando...";
 
     try {
-        const respuesta = await fetch(API_URL_CLIENTES + "/" + idClienteEnEdicion, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(construirBodyCliente(datos)),
-        });
+        const respuesta = await pedirJSON(
+            "PUT",
+            "/clientes/" + idClienteEnEdicion,
+            construirBodyCliente(datos)
+        );
 
         if (respuesta.status === 400) {
-            const cuerpo = await respuesta.json().catch(() => ({}));
+            const cuerpo = respuesta.datos || {};
             const detalles = Array.isArray(cuerpo.detalles) ? cuerpo.detalles.join(" ") : "";
             mostrarAvisoFormulario(detalles || "Datos inválidos.");
             return;
@@ -535,10 +535,8 @@ async function manejarEnvioFormulario(evento) {
             return;
         }
 
-        const clienteActualizado = await respuesta.json();
-
         // La edición queda registrada en MongoDB: NO se escribe en localStorage.
-        aplicarClienteActualizado(clienteActualizado);
+        aplicarClienteActualizado(respuesta.datos);
         cerrarFormulario();
         renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
         mostrarAvisoExito("Cliente actualizado correctamente.");
@@ -563,14 +561,10 @@ async function crearClienteEnAPI(datos) {
     boton.textContent = "Guardando...";
 
     try {
-        const respuesta = await fetch(API_URL_CLIENTES, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(construirBodyCliente(datos)),
-        });
+        const respuesta = await pedirJSON("POST", "/clientes", construirBodyCliente(datos));
 
         if (respuesta.status === 400) {
-            const cuerpo = await respuesta.json().catch(() => ({}));
+            const cuerpo = respuesta.datos || {};
             const detalles = Array.isArray(cuerpo.detalles) ? cuerpo.detalles.join(" ") : "";
             mostrarAvisoFormulario(detalles || "Datos inválidos.");
             return;
@@ -586,10 +580,8 @@ async function crearClienteEnAPI(datos) {
             return;
         }
 
-        const clienteCreado = await respuesta.json();
-
         // Se agrega el documento devuelto por la API (con su _id de MongoDB).
-        clientes.push(clienteCreado);
+        clientes.push(respuesta.datos);
         cerrarFormulario();
         renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
         mostrarAvisoExito("Cliente creado correctamente.");
@@ -719,20 +711,24 @@ async function inicializarFichaCliente() {
     }
 
     try {
-        const respuesta = await fetch(API_URL_CLIENTES + "/" + id);
+        const respuesta = await pedirJSON("GET", "/clientes/" + id);
 
-        if (!respuesta.ok) {
-            if (respuesta.status === 404) {
-                mostrarErrorFicha("Cliente no encontrado.");
-            } else if (respuesta.status === 400) {
-                mostrarErrorFicha("ID de cliente inválido.");
-            } else {
-                mostrarErrorFicha("No se pudo obtener el cliente.");
-            }
+        if (respuesta.status === 404) {
+            mostrarErrorFicha("Cliente no encontrado.");
             return;
         }
 
-        const cliente = await respuesta.json();
+        if (respuesta.status === 400) {
+            mostrarErrorFicha("ID de cliente inválido.");
+            return;
+        }
+
+        if (!respuesta.ok) {
+            mostrarErrorFicha("No se pudo obtener el cliente.");
+            return;
+        }
+
+        const cliente = respuesta.datos;
 
         if (cliente === null || typeof cliente !== "object") {
             mostrarErrorFicha("Cliente no encontrado.");
@@ -776,15 +772,13 @@ async function cargarClientesDesdeAPI() {
     mostrarMensaje("listado-error", false);
 
     try {
-        const respuesta = await fetch(API_URL_CLIENTES);
+        const respuesta = await pedirJSON("GET", "/clientes");
 
-        // Error HTTP (4xx / 5xx): se corta antes de intentar leer el JSON.
         if (!respuesta.ok) {
             throw new Error("Respuesta HTTP " + respuesta.status);
         }
 
-        const datos = await respuesta.json();
-        const lista = Array.isArray(datos) ? datos : [];
+        const lista = Array.isArray(respuesta.datos) ? respuesta.datos : [];
 
         // Los clientes del backend pasan a ser la lista que ya usan el
         // buscador, la tabla y las tarjetas. No se modifican los documentos.
@@ -867,7 +861,7 @@ async function eliminarClienteEnAPI(id) {
     }
 
     try {
-        const respuesta = await fetch(API_URL_CLIENTES + "/" + id, { method: "DELETE" });
+        const respuesta = await pedirJSON("DELETE", "/clientes/" + id);
 
         if (respuesta.status === 404) {
             // Ya no existe (por ejemplo, eliminado en otra pestaña): se quita de la vista.

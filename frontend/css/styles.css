@@ -1004,3 +1004,25 @@ body {
 .historial-pagos__cards[hidden] {
     display: none;
 }
+
+/* ---------- Página de login (login.html) ---------- */
+
+/* Contenedor angosto y centrado: el resto de .contenido no cambia */
+.contenido--login {
+    max-width: 480px;
+}
+
+.panel-login {
+    margin-top: 2rem;
+}
+
+.panel-login__ayuda {
+    margin: -1rem 0 1.5rem;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+}
+
+/* El formulario del login queda en una columna (no en grilla de dos) */
+.panel-login .formulario {
+    display: block;
+}

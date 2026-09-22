@@ -3,10 +3,12 @@
 
     Centraliza:
     - La URL base de la API (si cambia el host del backend, se cambia SOLO acá).
-    - Las peticiones fetch con JSON.
+    - Las peticiones fetch con JSON y credenciales (cookie de sesión HttpOnly).
     - La lectura de las respuestas y de los errores ({ error, detalles }).
+    - El manejo central de 401: si el backend rechaza la sesión, se redirige
+      al login desde UN solo lugar (las páginas no repiten esa lógica).
 
-    Se carga ANTES de los scripts de cada página (clientes.html y cliente.html).
+    Se carga ANTES de los scripts de cada página.
     No guarda nada: la API sigue siendo la fuente de verdad.
 */
 
@@ -32,14 +34,24 @@ function mensajeDeErrorDeAPI(datos, mensajePorDefecto) {
     return mensajePorDefecto;
 }
 
+// Envía al usuario al login (protección de interfaz; la real está en el backend).
+function redirigirALogin() {
+    if (!window.location.pathname.endsWith("/login.html")) {
+        window.location.href = "login.html";
+    }
+}
+
 /*
     Hace una petición a la API y devuelve SIEMPRE { ok, status, datos }.
     - `cuerpo` se envía como JSON sólo si se pasa (undefined => sin body).
+    - `credentials: "include"` envía la cookie de sesión en cada pedido.
+    - Un 401 redirige al login (excepto en el propio login, donde el
+      formulario muestra el mensaje sin recargar).
     - Si no hay conexión o el backend está apagado, el error se propaga para
       que cada página muestre su propio mensaje ("no se pudo conectar...").
 */
 async function pedirJSON(metodo, ruta, cuerpo) {
-    const opciones = { method: metodo, headers: {} };
+    const opciones = { method: metodo, headers: {}, credentials: "include" };
 
     if (cuerpo !== undefined) {
         opciones.headers["Content-Type"] = "application/json";
@@ -47,6 +59,10 @@ async function pedirJSON(metodo, ruta, cuerpo) {
     }
 
     const respuesta = await fetch(urlDeAPI(ruta), opciones);
+
+    if (respuesta.status === 401 && ruta !== "/auth/login") {
+        redirigirALogin();
+    }
 
     let datos = null;
 

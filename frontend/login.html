@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Manager — Iniciar sesión</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <main class="contenido contenido--login">
+        <section class="panel panel-login" aria-labelledby="titulo-login">
+            <h1 class="panel__titulo" id="titulo-login">Iniciar sesión</h1>
+            <p class="panel-login__ayuda">Ingresá con tu usuario para administrar el gimnasio.</p>
+
+            <form class="formulario" id="formulario-login" novalidate>
+                <div class="formulario__campo">
+                    <label for="campo-usuario">Usuario</label>
+                    <input type="text" id="campo-usuario" name="usuario" autocomplete="username" required aria-describedby="error-usuario" />
+                    <p class="formulario__error" id="error-usuario" hidden></p>
+                </div>
+
+                <div class="formulario__campo">
+                    <label for="campo-contrasena">Contraseña</label>
+                    <input type="password" id="campo-contrasena" name="contrasena" autocomplete="current-password" required aria-describedby="error-contrasena" />
+                    <p class="formulario__error" id="error-contrasena" hidden></p>
+                </div>
+
+                <!-- Mensaje genérico de credenciales incorrectas o de error de conexión -->
+                <p class="aviso-pago aviso-pago--error" id="login-mensaje" hidden role="alert"></p>
+
+                <div class="formulario__acciones">
+                    <button type="submit" class="boton boton--primario" id="boton-ingresar">Ingresar</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/login.js"></script>
+</body>
+</html>
