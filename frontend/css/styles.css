@@ -26,6 +26,8 @@
 }
 
 body {
+    display: flex;
+    min-height: 100vh;
     margin: 0;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     background-color: var(--color-background);
@@ -508,6 +510,7 @@ body {
    la tabla quepa mejor y la columna Acciones quede a la vista sin scroll.
    En anchos mayores se conserva el padding estándar. */
 @media (min-width: 1024px) and (max-width: 1279.98px) {
+
     .tabla-clientes th,
     .tabla-clientes td {
         padding: 0.625rem 0.5rem;
@@ -712,7 +715,7 @@ body {
         grid-template-columns: 1fr 1fr;
     }
 
-        /* En desktop se usa la tabla; se ocultan las tarjetas */
+    /* En desktop se usa la tabla; se ocultan las tarjetas */
     .listado-table {
         display: block;
     }
@@ -877,6 +880,7 @@ body {
 /* En tablet/desktop el formulario es una grilla de dos columnas:
    el resumen y los mensajes ocupan todo el ancho */
 @media (min-width: 640px) {
+
     .resumen-pago,
     .aviso-pago {
         grid-column: 1 / -1;
