@@ -710,9 +710,7 @@ function historialInicializar() {
     botonEliminarPagoConfirmar.addEventListener("click", historialConfirmarEliminar);
 
     if (botonEliminarPagoCancelar) {
-        botonEliminarPagoCancelar.addEventListener("click", () => {
-            historialPagoEnEdicion = null;
-        });
+        botonEliminarPagoCancelar.addEventListener("click", historialCerrarModalEliminar);
     }
 
     // Al cerrar el <dialog> por cualquier vía (Esc, cancelar), se limpia el estado.

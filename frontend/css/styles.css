@@ -190,7 +190,6 @@ body {
 .boton--secundario {
     background-color: var(--color-surface);
     border-color: var(--color-border);
-    color: var(--color-text-secondary);
 }
 
 .boton--secundario:hover {
@@ -989,8 +988,6 @@ body {
 
 /* Modal de edición de un pago: ancho cómodo en cualquier pantalla */
 .modal-editar-pago {
-    width: min(92vw, 480px);
-    max-height: 85vh;
     overflow-y: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radio-borde);
