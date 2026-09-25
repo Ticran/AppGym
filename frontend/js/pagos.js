@@ -507,9 +507,42 @@ async function pagoManejarEnvio(evento) {
                     ? PAGOS_MESES[pago.mes - 1] + " " + pago.anio + " por " + formatearPesos(pago.importeTotal)
                     : "correctamente";
 
+            // El backend actualiza `cuotaActual` del cliente con el importe base
+            // del pago SÓLO si el pago es del mes y año actuales. El cliente que
+            // quedó guardado para completar este formulario se mantiene igual,
+            // así al reabrirlo no sigue apareciendo la cuota anterior.
+            const actual = pagoObtenerAnioYMesActuales();
+            const esDelMesActual = pago.anio === actual.anio && pago.mes === actual.mes;
+            const cuotaActualizada = esDelMesActual && !pago.advertencia;
+
+            if (cuotaActualizada && pagoClienteCargado) {
+                pagoClienteCargado.cuotaActual = pago.importeCuota;
+            }
+
             // Se deja el formulario listo para el próximo registro.
             pagoPrepararFormulario();
-            pagoMostrarMensaje("Pago registrado " + detalle + ". La cuota actual del cliente no cambió.", "exito");
+
+            if (pago.advertencia) {
+                // El pago se registró, pero la cuota no se pudo actualizar: se
+                // muestra el aviso del backend en lugar de un éxito que sería falso.
+                pagoMostrarMensaje("Pago registrado " + detalle + ". " + pago.advertencia, "error");
+            } else if (cuotaActualizada) {
+                pagoMostrarMensaje(
+                    "Pago registrado " +
+                        detalle +
+                        ". La cuota actual del cliente se actualizó a " +
+                        formatearPesos(pago.importeCuota) +
+                        ".",
+                    "exito"
+                );
+            } else {
+                pagoMostrarMensaje(
+                    "Pago registrado " +
+                        detalle +
+                        ". La cuota actual del cliente no cambió porque el pago no es del mes actual.",
+                    "exito"
+                );
+            }
 
             // El historial de la ficha escucha este evento para refrescarse
             // sin recargar la página (lo maneja historial.js).

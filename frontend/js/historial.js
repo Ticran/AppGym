@@ -641,12 +641,55 @@ async function historialManejarEnvioEdicion(evento) {
         const respuesta = await pedirJSON("PUT", "/pagos/" + pago._id, cuerpo);
 
         if (respuesta.ok) {
+            const pagoActualizado = respuesta.datos;
+
+            // El backend sincroniza `cuotaActual` del cliente con el importe BASE
+            // del pago SÓLO si el pago, después de la edición, es del mes y año
+            // actuales (misma regla que al crear un pago). El cliente que usa el
+            // formulario de registro se mantiene igual, así no muestra una cuota
+            // que no está guardada. Los pagos de meses anteriores no la cambian.
+            const actual = pagoObtenerAnioYMesActuales();
+            const esDelMesActual =
+                pagoActualizado.anio === actual.anio && pagoActualizado.mes === actual.mes;
+            const cuotaSincronizada = esDelMesActual && !pagoActualizado.advertencia;
+
+            if (cuotaSincronizada && pagoClienteCargado) {
+                pagoClienteCargado.cuotaActual = pagoActualizado.importeCuota;
+            }
+
             historialCerrarModalEditar();
-            historialMostrarMensaje(
-                "Pago de " + historialNombrePeriodo(respuesta.datos) + " actualizado correctamente.",
-                "exito"
-            );
+
+            const detalle =
+                "Pago de " +
+                historialNombrePeriodo(pagoActualizado) +
+                " actualizado correctamente.";
+
+            let textoDelMensaje;
+            let tipoDelMensaje;
+
+            if (pagoActualizado.advertencia) {
+                // El pago se actualizó, pero la cuota no se pudo sincronizar: se
+                // muestra el aviso del backend en lugar de un éxito que sería falso.
+                textoDelMensaje = detalle + " " + pagoActualizado.advertencia;
+                tipoDelMensaje = "error";
+            } else if (cuotaSincronizada) {
+                textoDelMensaje =
+                    detalle +
+                    " La cuota actual del cliente se actualizó a " +
+                    formatearPesos(pagoActualizado.importeCuota) +
+                    ".";
+                tipoDelMensaje = "exito";
+            } else {
+                textoDelMensaje =
+                    detalle + " La cuota actual del cliente no cambió porque el pago no es del mes actual.";
+                tipoDelMensaje = "exito";
+            }
+
+            // El listado se recarga para mostrar el pago editado. El mensaje se
+            // muestra DESPUÉS: historialCargar() limpia el mensaje al empezar.
             await historialCargar();
+            historialMostrarMensaje(textoDelMensaje, tipoDelMensaje);
+
             return;
         }
 

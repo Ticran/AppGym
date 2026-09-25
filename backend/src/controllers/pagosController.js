@@ -423,6 +423,14 @@ function responderErrorDePago(error, res, accion, mensajeGenerico) {
   - importeTotal: siempre importeCuota + importeRecargo.
   - importePagado: en esta fase no hay pagos parciales, por lo que debe
     coincidir con importeTotal (si no se envía, se completa solo).
+
+  Cuota actual del cliente:
+  - Si el pago corresponde al MES Y AÑO ACTUALES, se actualiza `cuotaActual`
+    del cliente con el importe BASE del pago (`importeCuota`), SIN recargo.
+  - Un pago atrasado de un mes anterior NO la modifica: pagar una deuda vieja
+    no debe hacer retroceder la cuota vigente.
+  - Si esa actualización falla, el pago ya está creado: se responde 201 con
+    `advertencia` y el error queda en el log. El pago NO se elimina.
 */
 async function crearPago(req, res) {
   try {
@@ -568,6 +576,38 @@ async function crearPago(req, res) {
         : {}),
     });
 
+    // ---------- Cuota actual del cliente ----------
+    // La cuota vigente pasa a ser el importe BASE del pago recién registrado
+    // (`importeCuota`), nunca `importeTotal`: el recargo es un importe
+    // extraordinario del pago y no forma parte de la cuota.
+    //
+    // Sólo se actualiza si el pago es del MES Y AÑO ACTUALES: registrar la
+    // deuda de un mes anterior no debe hacer retroceder la cuota vigente.
+    const mesActual = obtenerMesActual();
+
+    if (anio === mesActual.anio && mes === mesActual.mes) {
+      try {
+        await Cliente.updateOne(
+          { _id: cliente._id },
+          { $set: { cuotaActual: importeCuota } },
+          { runValidators: true }
+        );
+      } catch (errorDeCuota) {
+        // El pago YA quedó registrado (es el registro del dinero y no se
+        // revierte). La respuesta sigue siendo 201 y se avisa con
+        // `advertencia`, para no dar a entender que el pago falló.
+        console.error(
+          `El pago ${pago._id} se registró, pero no se pudo actualizar la cuota actual del cliente ${cliente._id}: ${ocultarCredenciales(errorDeCuota.message)}`
+        );
+
+        return res.status(201).json({
+          ...pago.toObject(),
+          advertencia:
+            'El pago se registró correctamente, pero no se pudo actualizar la cuota actual del cliente.',
+        });
+      }
+    }
+
     res.status(201).json(pago);
   } catch (error) {
     return responderErrorDePago(error, res, 'crear', 'No se pudo crear el pago');
@@ -589,6 +629,14 @@ async function crearPago(req, res) {
   - importePagado se mantiene igual a importeTotal (no hay pagos parciales).
 
   Enviar `nuevaCuotaMesSiguiente: null` borra ese dato del pago.
+
+  Cuota actual del cliente:
+  - Si el pago, DESPUÉS DE LA EDICIÓN, corresponde al MES Y AÑO ACTUALES, se
+    actualiza `cuotaActual` del cliente con el importe BASE del pago
+    (`importeCuota`), SIN recargo. Mover el pago a un mes o año anterior NO la
+    modifica: es la misma regla que se aplica al crear un pago.
+  - Si esa actualización falla, el pago ya está editado: se responde 200 con
+    `advertencia` y el error queda en el log. El pago NO se revierte.
 */
 async function actualizarPago(req, res) {
   try {
@@ -776,7 +824,36 @@ async function actualizarPago(req, res) {
       return res.status(404).json({ error: 'Pago no encontrado' });
     }
 
-    // Importante: actualizar un pago NO modifica `cuotaActual` del cliente.
+    // ---------- Cuota actual del cliente ----------
+    // Misma regla que al crear un pago: `cuotaActual` pasa a ser el importe BASE
+    // (`importeCuota`, sin recargo) SÓLO si el pago, DESPUÉS DE LA EDICIÓN,
+    // corresponde al MES Y AÑO ACTUALES. Mover el pago a un mes o año anterior
+    // no la modifica: no se recalcula nada a partir del historial.
+    const mesActual = obtenerMesActual();
+
+    if (anio === mesActual.anio && mes === mesActual.mes) {
+      try {
+        await Cliente.updateOne(
+          { _id: idCliente },
+          { $set: { cuotaActual: importeCuota } },
+          { runValidators: true }
+        );
+      } catch (errorDeCuota) {
+        // El pago YA quedó editado (es el registro del dinero y no se revierte).
+        // La respuesta sigue siendo 200 y se avisa con `advertencia`, para no dar
+        // a entender que la edición falló.
+        console.error(
+          `El pago ${pago._id} se actualizó, pero no se pudo actualizar la cuota actual del cliente ${idCliente}: ${ocultarCredenciales(errorDeCuota.message)}`
+        );
+
+        return res.status(200).json({
+          ...pago.toObject(),
+          advertencia:
+            'El pago se actualizó correctamente, pero no se pudo actualizar la cuota actual del cliente.',
+        });
+      }
+    }
+
     res.status(200).json(pago);
   } catch (error) {
     return responderErrorDePago(error, res, 'actualizar', 'No se pudo actualizar el pago');

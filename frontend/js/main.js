@@ -175,6 +175,21 @@ function dashboardRenderizarUltimosPagos(pagos, clientesPorId) {
 
 // ---------- Panel "Pendientes de pago" ----------
 
+// Monto aproximado que le corresponde pagar al cliente según su `cuotaActual`.
+// Es la referencia de la cuota conocida (de ahí el "≈"), no una deuda
+// calculada: no se suman meses anteriores ni recargos.
+// Si el dato no sirve (ausente, no numérico o <= 0) se devuelve un texto
+// neutro: nunca "$NaN", "$0" ni un importe inventado.
+function dashboardCuotaAproximada(cliente) {
+    const cuota = Number(cliente.cuotaActual);
+
+    if (!Number.isFinite(cuota) || cuota <= 0) {
+        return "Cuota no definida";
+    }
+
+    return "≈ " + formatearPesos(cuota);
+}
+
 function dashboardRenderizarPendientes(pendientes) {
     const mostrados = pendientes.slice(0, DASHBOARD_MAXIMO_PENDIENTES);
     const hayPendientes = mostrados.length > 0;
@@ -191,7 +206,12 @@ function dashboardRenderizarPendientes(pendientes) {
         nombre.className = "item-lista__nombre";
         nombre.textContent = `${cliente.nombre} ${cliente.apellido}`;
 
+        const importe = document.createElement("span");
+        importe.className = "item-lista__valor";
+        importe.textContent = dashboardCuotaAproximada(cliente);
+
         item.appendChild(nombre);
+        item.appendChild(importe);
         dashboardListaPendientes.appendChild(item);
     });
 }
