@@ -794,11 +794,6 @@ body {
     gap: 0.75rem;
 }
 
-/* Panel de registro: aparece debajo de la ficha del cliente */
-.panel-pago {
-    margin-top: 1.5rem;
-}
-
 .panel-pago__cliente {
     margin: 0 0 1rem;
     padding: 0.75rem 1rem;
@@ -986,15 +981,19 @@ body {
     text-align: right;
 }
 
-/* Modal de edición de un pago: ancho cómodo en cualquier pantalla */
-.modal-editar-pago {
+/* Modales con formulario: editar pago, agregar/editar cliente y registrar pago.
+   Son <dialog> nativos: se centran solos y, si el formulario es más alto que la
+   pantalla, scrollean por dentro sin desplazar la página del fondo. */
+.modal-editar-pago,
+.modal-formulario {
     overflow-y: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radio-borde);
     padding: 1.5rem;
 }
 
-.modal-editar-pago::backdrop {
+.modal-editar-pago::backdrop,
+.modal-formulario::backdrop {
     background-color: rgba(31, 41, 55, 0.5);
 }
 

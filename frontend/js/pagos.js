@@ -428,7 +428,11 @@ function pagoConstruirBody() {
     actual real (la API es la fuente de verdad).
 */
 async function pagoAbrirPanel() {
-    pagoPanel.hidden = false;
+    // El panel es un <dialog> nativo: se abre como modal, igual que "Editar pago".
+    if (!pagoPanel.open && typeof pagoPanel.showModal === "function") {
+        pagoPanel.showModal();
+    }
+
     pagoTextoCliente.hidden = true;
     pagoTextoClienteCargando.hidden = false;
     pagoMostrarMensaje("", "exito");
@@ -467,7 +471,10 @@ async function pagoAbrirPanel() {
 }
 
 function pagoCerrarPanel() {
-    pagoPanel.hidden = true;
+    if (pagoPanel.open && typeof pagoPanel.close === "function") {
+        pagoPanel.close();
+    }
+
     pagoMostrarMensaje("", "exito");
 }
 
@@ -604,6 +611,12 @@ function pagoInicializar() {
     pagoCampoPorcentaje.addEventListener("input", pagoManejarCambioDePorcentaje);
     pagoCampoFecha.addEventListener("change", pagoManejarCambioDeFecha);
     pagoCampoAnio.addEventListener("change", pagoActualizarMesesDisponibles);
+
+    // Esc cierra el <dialog> por su cuenta: el mensaje se limpia igual que con
+    // Cerrar o Cancelar (pagoCerrarPanel hace exactamente lo mismo).
+    pagoPanel.addEventListener("close", () => {
+        pagoMostrarMensaje("", "exito");
+    });
 }
 
 // Este script se carga al final del body, así que el DOM ya está disponible.

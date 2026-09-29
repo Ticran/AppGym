@@ -292,9 +292,8 @@ function abrirFormulario() {
     idClienteEnEdicion = null;
     cambiarModoFormulario("creacion");
     limpiarFormulario();
+    abrirModalFormulario();
 
-    const panel = document.getElementById("panel-formulario");
-    panel.hidden = false;
     document.getElementById("campo-nombre").focus();
 }
 
@@ -309,13 +308,28 @@ function abrirFormularioEdicion(id) {
     cambiarModoFormulario("edicion");
     mostrarErrores({});
     cargarDatosCliente(cliente);
+    abrirModalFormulario();
+}
 
-    document.getElementById("panel-formulario").hidden = false;
+// Abre el modal del formulario. Es un <dialog> nativo: se muestra con showModal()
+// (mismo patrón que el modal "Editar pago" de cliente.html).
+function abrirModalFormulario() {
+    const modal = document.getElementById("panel-formulario");
+
+    if (modal && !modal.open && typeof modal.showModal === "function") {
+        modal.showModal();
+    }
 }
 
 function cerrarFormulario() {
     idClienteEnEdicion = null;
-    document.getElementById("panel-formulario").hidden = true;
+
+    const modal = document.getElementById("panel-formulario");
+
+    if (modal && modal.open && typeof modal.close === "function") {
+        modal.close();
+    }
+
     limpiarFormulario();
 }
 
@@ -957,6 +971,14 @@ if (botonCerrarFormulario) {
 
 if (botonCancelarFormulario) {
     botonCancelarFormulario.addEventListener("click", cerrarFormulario);
+}
+
+// Esc cierra el <dialog> por su cuenta: se limpia el formulario igual que con
+// Cerrar o Cancelar (la limpieza es idempotente y no reabre ni recrea nada).
+const modalFormulario = document.getElementById("panel-formulario");
+
+if (modalFormulario) {
+    modalFormulario.addEventListener("close", cerrarFormulario);
 }
 
 if (formularioCliente) {

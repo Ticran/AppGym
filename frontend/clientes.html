@@ -61,8 +61,12 @@
         <!-- Aviso de éxito (por ejemplo, tras actualizar un cliente) -->
         <p class="listado-clientes__vacio" id="aviso-exito-listado" hidden></p>
 
-        <!-- Formulario para agregar cliente (se abre y cierra con JS) -->
-        <section class="panel-formulario" id="panel-formulario" hidden aria-labelledby="titulo-formulario">
+        <!--
+            Formulario para agregar o editar un cliente.
+            Es un modal nativo (<dialog>), igual que "Editar pago" en cliente.html:
+            lo abre clientes.js y se cierra con Cerrar, Cancelar o Esc.
+        -->
+        <dialog class="modal-formulario" id="panel-formulario" aria-labelledby="titulo-formulario">
             <div class="panel-formulario__cabecera">
                 <h2 class="panel-formulario__titulo" id="titulo-formulario">Agregar cliente</h2>
                 <button class="boton-accion" type="button" id="boton-cerrar-formulario">Cerrar</button>
@@ -127,7 +131,7 @@
                     <button type="button" class="boton" id="boton-cancelar-formulario">Cancelar</button>
                 </div>
             </form>
-        </section>
+        </dialog>
 
         <!--
             Listado de clientes.

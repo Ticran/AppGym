@@ -69,10 +69,11 @@
 
         <!--
             Registro de pago del cliente.
-            Está oculto hasta que el dueño presiona "Registrar pago": recién ahí
-            se consulta el cliente en la API y se completa el formulario.
+            Es un modal nativo (<dialog>), igual que "Editar pago": se abre con el
+            botón "Registrar pago" y recién ahí se consulta el cliente en la API y
+            se completa el formulario. Se cierra con Cerrar, Cancelar o Esc.
         -->
-        <section class="panel-formulario panel-pago" id="panel-pago" hidden aria-labelledby="titulo-formulario-pago">
+        <dialog class="modal-formulario" id="panel-pago" aria-labelledby="titulo-formulario-pago">
             <div class="panel-formulario__cabecera">
                 <h2 class="panel-formulario__titulo" id="titulo-formulario-pago">Registrar pago</h2>
                 <button class="boton-accion" type="button" id="boton-cerrar-pago">Cerrar</button>
@@ -145,7 +146,7 @@
                     <button type="button" class="boton" id="boton-cancelar-pago">Cancelar</button>
                 </div>
             </form>
-        </section>
+        </dialog>
         <!--
             Historial de pagos del cliente.
             Se carga con JavaScript desde GET /api/clientes/:id/pagos.
