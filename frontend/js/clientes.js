@@ -12,6 +12,19 @@
 // la API (cargarClientesDesdeAPI) y NO se persiste en localStorage.
 const clientes = [];
 
+// Zona horaria del gimnasio: la MISMA que usan el Dashboard (main.js) y el
+// backend (controllers/pagosController.js) para decidir el "mes actual".
+const CLIENTES_ZONA_HORARIA = "America/Argentina/Buenos_Aires";
+
+// IDs (en texto) de los clientes con pago registrado en el mes y año
+// actuales. Se llena con GET /api/pagos?anio=...&mes=... y es lo único que
+// necesita el filtro "Pendientes de pago".
+let idsQuePagaron = new Set();
+
+// Si esa consulta falló no se puede saber quién está pendiente: nunca se
+// asume que nadie pagó (todos los activos parecerían pendientes).
+let errorAlCargarPagos = false;
+
 // ---------- Utilidades de formato ----------
 
 // Formatea un número como pesos: 25000 -> "$25.000"
@@ -242,8 +255,98 @@ function manejarBusqueda() {
         return;
     }
 
-    const texto = obtenerTextoBusqueda();
-    renderizarClientes(filtrarClientes(texto));
+    renderizarClientes(aplicarFiltros());
+}
+
+// ---------- Filtro de estado de pago ----------
+
+// Año y mes actuales (números) en la zona horaria del gimnasio. Es el mismo
+// criterio que el Dashboard (dashboardAnioYMesActuales en main.js).
+function anioYMesActuales() {
+    const partes = new Intl.DateTimeFormat("en-US", {
+        timeZone: CLIENTES_ZONA_HORARIA,
+        year: "numeric",
+        month: "2-digit",
+    }).formatToParts(new Date());
+
+    const valor = (tipo) => partes.find((parte) => parte.type === tipo).value;
+
+    return { anio: Number(valor("year")), mes: Number(valor("month")) };
+}
+
+// Valor actual del selector #filtro-estado-pago. En las páginas donde el
+// selector no existe (cliente.html), el filtro equivale a "todos".
+function obtenerFiltroDePago() {
+    const selector = document.getElementById("filtro-estado-pago");
+
+    return selector ? selector.value : "todos";
+}
+
+// Vuelve el selector a "Todos" (el listado completo siempre está disponible).
+function reiniciarFiltroDePago() {
+    const selector = document.getElementById("filtro-estado-pago");
+
+    if (selector) {
+        selector.value = "todos";
+    }
+}
+
+// Un cliente está pendiente de pago cuando está ACTIVO y NO tiene ningún pago
+// registrado en el mes y año actuales. Es exactamente la misma definición que
+// dashboardPendientesDePago() del Dashboard (frontend/js/main.js): no hay
+// deuda acumulada, meses anteriores, mora, recargos ni intereses.
+function estaPendienteDePago(cliente) {
+    return cliente.estado === "Activo" && !idsQuePagaron.has(String(cliente._id));
+}
+
+// Lista final antes de renderizar: primero la búsqueda de siempre
+// (filtrarClientes: nombre, apellido o DNI) y después el filtro de pago.
+// Los dos predicados son independientes, así que el resultado es el mismo en
+// cualquier orden y filtrarClientes() no necesita cambiar.
+function aplicarFiltros() {
+    const coincidentes = filtrarClientes(obtenerTextoBusqueda());
+
+    // Sin los pagos del mes cargados no se puede saber quién está pendiente:
+    // se muestra el listado completo (nunca datos falsos).
+    if (obtenerFiltroDePago() !== "pendientes" || errorAlCargarPagos) {
+        return coincidentes;
+    }
+
+    return coincidentes.filter(estaPendienteDePago);
+}
+
+// Guarda en `idsQuePagaron` los clientes con pago en el mes y año actuales.
+// Si la consulta falló, se marca el error para avisar cuando el usuario elija
+// "Pendientes de pago".
+function guardarPagosDelMes(respuesta) {
+    if (respuesta === null || !respuesta.ok || !Array.isArray(respuesta.datos)) {
+        errorAlCargarPagos = true;
+        idsQuePagaron = new Set();
+        return;
+    }
+
+    idsQuePagaron = new Set(respuesta.datos.map((pago) => String(pago.cliente)));
+}
+
+// Cambio del selector de filtro: se reutilizan los datos ya cargados (no se
+// vuelve a consultar la API). Si los pagos no se pudieron cargar, se avisa y
+// se mantiene el listado completo visible.
+function manejarCambioDeFiltroDePago() {
+    // Sin clientes cargados no hay datos válidos que filtrar: se deja el
+    // mensaje de error del listado tal como está (mismo criterio que
+    // manejarBusqueda).
+    if (errorAlCargarClientes) {
+        return;
+    }
+
+    if (errorAlCargarPagos && obtenerFiltroDePago() === "pendientes") {
+        reiniciarFiltroDePago();
+        mostrarMensajeListado(
+            "No se pudieron cargar los pagos del mes actual, así que el filtro \"Pendientes de pago\" no está disponible."
+        );
+    }
+
+    renderizarClientes(aplicarFiltros());
 }
 
 // ---------- Renderizado principal ----------
@@ -552,7 +655,7 @@ async function manejarEnvioFormulario(evento) {
         // La edición queda registrada en MongoDB: NO se escribe en localStorage.
         aplicarClienteActualizado(respuesta.datos);
         cerrarFormulario();
-        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        renderizarClientes(aplicarFiltros());
         mostrarAvisoExito("Cliente actualizado correctamente.");
     } catch (error) {
         // Falla de red o backend apagado: detalle técnico solo en consola.
@@ -597,7 +700,7 @@ async function crearClienteEnAPI(datos) {
         // Se agrega el documento devuelto por la API (con su _id de MongoDB).
         clientes.push(respuesta.datos);
         cerrarFormulario();
-        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        renderizarClientes(aplicarFiltros());
         mostrarAvisoExito("Cliente creado correctamente.");
     } catch (error) {
         // Falla de red o backend apagado: detalle técnico solo en consola.
@@ -772,31 +875,50 @@ function mostrarMensaje(id, visible) {
     }
 }
 
-// Pide los clientes al backend y los muestra en el listado.
+// Pide los clientes al backend y los muestra en el listado. También pide los
+// pagos del MES Y AÑO ACTUALES (la misma consulta que usa el Dashboard) para
+// poder filtrar por "Pendientes de pago": las dos consultas van en paralelo y
+// nunca se hace una petición por cliente.
 // Los datos recibidos NO se guardan en localStorage: la API es la fuente
 // de datos de esta página.
 async function cargarClientesDesdeAPI() {
     errorAlCargarClientes = false;
+    errorAlCargarPagos = false;
     mostrarMensaje("listado-cargando", true);
     mostrarMensaje("listado-vacio", false);
     mostrarMensaje("listado-error", false);
 
-    try {
-        const respuesta = await pedirJSON("GET", "/clientes");
+    const { anio, mes } = anioYMesActuales();
 
-        if (!respuesta.ok) {
-            throw new Error("Respuesta HTTP " + respuesta.status);
+    try {
+        // Si la consulta de pagos falla, se resuelve como `null`: el listado de
+        // clientes se muestra igual y el filtro "Pendientes de pago" avisa.
+        const [respuestaClientes, respuestaPagos] = await Promise.all([
+            pedirJSON("GET", "/clientes"),
+            pedirJSON("GET", "/pagos?anio=" + anio + "&mes=" + mes).catch(() => null),
+        ]);
+
+        if (!respuestaClientes.ok) {
+            throw new Error("Respuesta HTTP " + respuestaClientes.status);
         }
 
-        const lista = Array.isArray(respuesta.datos) ? respuesta.datos : [];
+        const lista = Array.isArray(respuestaClientes.datos) ? respuestaClientes.datos : [];
 
         // Los clientes del backend pasan a ser la lista que ya usan el
         // buscador, la tabla y las tarjetas. No se modifican los documentos.
         clientes.length = 0;
         lista.forEach((cliente) => clientes.push(cliente));
 
+        guardarPagosDelMes(respuestaPagos);
+
+        // Sin los pagos del mes el filtro queda en "Todos" (el aviso se
+        // muestra si el usuario intenta usar "Pendientes de pago").
+        if (errorAlCargarPagos) {
+            reiniciarFiltroDePago();
+        }
+
         mostrarMensaje("listado-cargando", false);
-        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        renderizarClientes(aplicarFiltros());
     } catch (error) {
         // Detalle técnico solo para depuración en consola.
         console.error("No se pudieron cargar los clientes:", error.message);
@@ -876,7 +998,7 @@ async function eliminarClienteEnAPI(id) {
         if (respuesta.status === 404) {
             // Ya no existe (por ejemplo, eliminado en otra pestaña): se quita de la vista.
             quitarClienteDeLaLista(id);
-            renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+            renderizarClientes(aplicarFiltros());
             mostrarMensajeListado("El cliente no fue encontrado. Puede que ya se haya eliminado.");
             return;
         }
@@ -900,7 +1022,7 @@ async function eliminarClienteEnAPI(id) {
 
         // 200: el backend confirma el borrado definitivo en MongoDB.
         quitarClienteDeLaLista(id);
-        renderizarClientes(filtrarClientes(obtenerTextoBusqueda()));
+        renderizarClientes(aplicarFiltros());
         mostrarMensajeListado("Cliente eliminado correctamente.");
     } catch (error) {
         // Falla de red o backend apagado: detalle técnico solo en consola.
@@ -926,6 +1048,13 @@ const formularioCliente = document.getElementById("formulario-cliente");
 
 if (buscador) {
     buscador.addEventListener("input", manejarBusqueda);
+}
+
+// Filtro de estado de pago: sólo existe en clientes.html, donde está el listado.
+const filtroEstadoPago = document.getElementById("filtro-estado-pago");
+
+if (filtroEstadoPago) {
+    filtroEstadoPago.addEventListener("change", manejarCambioDeFiltroDePago);
 }
 
 if (botonAgregar) {

@@ -230,6 +230,39 @@ body {
     border-color: var(--color-primary);
 }
 
+/* ---------- Filtro de estado de pago (listado de clientes) ---------- */
+
+.filtro-pago {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-top: 0.75rem;
+    max-width: 480px;
+}
+
+.filtro-pago label {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.filtro-pago select {
+    flex: 1;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.filtro-pago select:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 0;
+    border-color: var(--color-primary);
+}
+
 /* ---------- Formulario ---------- */
 
 .panel-formulario {

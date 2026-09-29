@@ -59,6 +59,15 @@
             />
         </div>
 
+        <!-- Filtro de estado de pago: se combina con el buscador del listado -->
+        <div class="filtro-pago">
+            <label for="filtro-estado-pago">Filtro de pago</label>
+            <select id="filtro-estado-pago">
+                <option value="todos" selected>Todos</option>
+                <option value="pendientes">Pendientes de pago</option>
+            </select>
+        </div>
+
         <!-- Aviso de éxito (por ejemplo, tras actualizar un cliente) -->
         <p class="listado-clientes__vacio" id="aviso-exito-listado" hidden></p>
 
