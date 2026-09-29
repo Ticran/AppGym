@@ -187,14 +187,7 @@ body {
     filter: brightness(0.92);
 }
 
-.boton--secundario {
-    background-color: var(--color-surface);
-    border-color: var(--color-border);
-}
-
-.boton--secundario:hover {
-    background-color: var(--color-background);
-}
+/* .boton--secundario no define estilos propios: su aspecto es el de .boton. */
 
 .boton:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -508,7 +501,6 @@ body {
    la tabla quepa mejor y la columna Acciones quede a la vista sin scroll.
    En anchos mayores se conserva el padding estándar. */
 @media (min-width: 1024px) and (max-width: 1279.98px) {
-
     .tabla-clientes th,
     .tabla-clientes td {
         padding: 0.625rem 0.5rem;
@@ -659,7 +651,6 @@ body {
 @media (min-width: 1024px) {
     body {
         display: flex;
-        min-height: 100vh;
     }
 
     .encabezado {
@@ -873,7 +864,6 @@ body {
 /* En tablet/desktop el formulario es una grilla de dos columnas:
    el resumen y los mensajes ocupan todo el ancho */
 @media (min-width: 640px) {
-
     .resumen-pago,
     .aviso-pago {
         grid-column: 1 / -1;
@@ -986,6 +976,7 @@ body {
    pantalla, scrollean por dentro sin desplazar la página del fondo. */
 .modal-editar-pago,
 .modal-formulario {
+    width: min(36rem, calc(100% - 2rem));
     overflow-y: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radio-borde);
