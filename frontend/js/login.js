@@ -8,6 +8,12 @@
     - Mensaje SIEMPRE genérico para credenciales incorrectas.
     - Estado de carga y prevención de doble envío.
     - Éxito: redirige al dashboard (la cookie viaja sola a partir de ahora).
+
+    Además, al cargar la página se REUTILIZA la sesión existente: si el usuario
+    ya está autenticado, no tiene sentido mostrarle el formulario otra vez.
+    Esa comprobación usa la autenticación que YA existe (GET /api/auth/me,
+    requireAuth + JWT en cookie HttpOnly, credentials: "include"), sin guardar
+    nada en el navegador y sin tocar el login manual.
 */
 
 const formularioLogin = document.getElementById("formulario-login");
@@ -15,6 +21,12 @@ const campoUsuario = document.getElementById("campo-usuario");
 const campoContrasena = document.getElementById("campo-contrasena");
 const mensajeLogin = document.getElementById("login-mensaje");
 const botonIngresar = document.getElementById("boton-ingresar");
+const panelLogin = document.querySelector(".panel-login");
+
+// Tiempo máximo que la tarjeta queda oculta mientras se comprueba la sesión.
+// Si la API no responde, el formulario se muestra igual: la pantalla nunca
+// queda vacía por una comprobación que es sólo un extra.
+const LOGIN_MAXIMO_ESPERA_COMPROBACION_MS = 4000;
 
 let loginEnviando = false;
 
@@ -41,6 +53,59 @@ function loginMostrarErrores(errores) {
             entrada.removeAttribute("aria-invalid");
         }
     });
+}
+
+/*
+    Muestra u oculta la tarjeta del login. Se oculta sólo durante la
+    comprobación de sesión, para no mostrar el formulario y saltar al
+    Dashboard un instante después.
+*/
+function loginMostrarPanel(visible) {
+    if (panelLogin) {
+        panelLogin.hidden = !visible;
+    }
+}
+
+/*
+    Comprueba si YA hay una sesión válida antes de mostrar el formulario.
+    Reutiliza la autenticación existente (GET /api/auth/me con la cookie
+    HttpOnly); no crea sesiones, cookies ni tokens nuevos.
+
+    - 200 -> hay sesión: se redirige al Dashboard (misma ruta que usa el login
+      correcto) y el formulario no se muestra nunca.
+    - 401 -> no hay sesión activa: NO es un error de esta pantalla, así que no
+      se muestra ningún mensaje y el formulario aparece normalmente.
+      api.js no redirige al login cuando se está en login.html, por eso este
+      401 no puede provocar un loop de redirecciones.
+    - Fallo de red u otro estado -> se muestra el formulario igual (el login
+      manual sigue siendo el camino normal).
+*/
+async function loginComprobarSesionExistente() {
+    loginMostrarPanel(false);
+
+    const temporizadorPanel = setTimeout(
+        () => loginMostrarPanel(true),
+        LOGIN_MAXIMO_ESPERA_COMPROBACION_MS
+    );
+
+    let haySesionActiva = false;
+
+    try {
+        const respuesta = await pedirJSON("GET", "/auth/me");
+        haySesionActiva = respuesta.status === 200;
+    } catch (error) {
+        console.error("No se pudo comprobar la sesión existente:", error.message);
+    }
+
+    clearTimeout(temporizadorPanel);
+
+    if (haySesionActiva) {
+        // Misma ruta de destino que después de un login correcto.
+        window.location.href = "index.html";
+        return;
+    }
+
+    loginMostrarPanel(true);
 }
 
 async function loginManejarEnvio(evento) {
@@ -103,3 +168,6 @@ async function loginManejarEnvio(evento) {
 }
 
 formularioLogin.addEventListener("submit", loginManejarEnvio);
+
+// Si ya hay sesión válida, se entra al Dashboard y no se muestra el login.
+loginComprobarSesionExistente();
