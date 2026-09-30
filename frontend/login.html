@@ -7,9 +7,11 @@
     <link rel="icon" href="img/mancuerna.jpeg" type="mancuerna">
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="pagina-login">
     <main class="contenido contenido--login">
         <section class="panel panel-login" aria-labelledby="titulo-login">
+            <!-- Identidad de la aplicación: sólo texto -->
+            <p class="panel-login__marca">Gym Manager</p>
             <h1 class="panel__titulo" id="titulo-login">Iniciar sesión</h1>
             <p class="panel-login__ayuda">Ingresá con tu usuario para administrar el gimnasio.</p>
 
@@ -19,7 +21,6 @@
                     <input type="text" id="campo-usuario" name="usuario" autocomplete="username" required aria-describedby="error-usuario" />
                     <p class="formulario__error" id="error-usuario" hidden></p>
                 </div>
-                <br>
                 <div class="formulario__campo">
                     <label for="campo-contrasena">Contraseña</label>
                     <input type="password" id="campo-contrasena" name="contrasena" autocomplete="current-password" required aria-describedby="error-contrasena" />
@@ -28,7 +29,7 @@
 
                 <!-- Mensaje genérico de credenciales incorrectas o de error de conexión -->
                 <p class="aviso-pago aviso-pago--error" id="login-mensaje" hidden role="alert"></p>
-                <br>
+
                 <div class="formulario__acciones">
                     <button type="submit" class="boton boton--primario" id="boton-ingresar">Ingresar</button>
                 </div>
