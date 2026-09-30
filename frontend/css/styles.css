@@ -1123,3 +1123,28 @@ body {
     padding: 0.75rem 1.25rem;
     font-size: 1rem;
 }
+
+/* Atribución de autoría: firma discreta debajo de la tarjeta (nunca dentro).
+   La separación la aporta el gap de .contenido, no un margen nuevo. */
+.atribucion-login {
+    margin: 0;
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+.atribucion-login__enlace {
+    color: var(--color-primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.atribucion-login__enlace:hover {
+    text-decoration: underline;
+}
+
+/* Mismo indicador de foco que el resto de la aplicación (.boton:focus-visible) */
+.atribucion-login__enlace:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
