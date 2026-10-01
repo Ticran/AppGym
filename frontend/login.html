@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="icon" href="img/mancuerna.jpeg" type="mancuerna">
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body class="pagina-login">
     <main class="contenido contenido--login">
         <section class="panel panel-login" aria-labelledby="titulo-login">
@@ -18,12 +20,14 @@
             <form class="formulario" id="formulario-login" novalidate>
                 <div class="formulario__campo">
                     <label for="campo-usuario">Usuario</label>
-                    <input type="text" id="campo-usuario" name="usuario" autocomplete="username" required aria-describedby="error-usuario" />
+                    <input type="text" id="campo-usuario" name="usuario" autocomplete="username" required
+                        aria-describedby="error-usuario" />
                     <p class="formulario__error" id="error-usuario" hidden></p>
                 </div>
                 <div class="formulario__campo">
                     <label for="campo-contrasena">Contraseña</label>
-                    <input type="password" id="campo-contrasena" name="contrasena" autocomplete="current-password" required aria-describedby="error-contrasena" />
+                    <input type="password" id="campo-contrasena" name="contrasena" autocomplete="current-password"
+                        required aria-describedby="error-contrasena" />
                     <p class="formulario__error" id="error-contrasena" hidden></p>
                 </div>
 
@@ -36,11 +40,17 @@
             </form>
         </section>
 
+        <p class="login-carga">
+            <span class="login-carga__spinner"></span>
+            Cargando...
+        </p>
         <!-- Atribución de autoría: fuera de la tarjeta, sólo texto -->
-        <p class="atribucion-login">Desarrollado por <a class="atribucion-login__enlace" href="https://github.com/Ticran">Cristian Andrada</a></p>
+        <p class="atribucion-login">Desarrollado por <a class="atribucion-login__enlace"
+                href="https://github.com/Ticran">Cristian Andrada</a></p>
     </main>
 
     <script src="js/api.js"></script>
     <script src="js/login.js"></script>
 </body>
+
 </html>

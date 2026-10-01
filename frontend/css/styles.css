@@ -363,11 +363,31 @@ body {
     padding: 1.25rem;
 }
 
-.listado-clientes__vacio {
+.listado-clientes__vacio,
+.login-carga {
     margin: 0;
     padding: 1rem 0;
     text-align: center;
     color: var(--color-text-secondary);
+    
+}
+
+.login-carga__spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    border: 2px solid var(--color-text-secondary);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: girar 0.8s linear infinite;
+    vertical-align: -0.15rem;
+}
+
+@keyframes girar {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Tabla (solo desktop) */

@@ -22,6 +22,8 @@ const campoContrasena = document.getElementById("campo-contrasena");
 const mensajeLogin = document.getElementById("login-mensaje");
 const botonIngresar = document.getElementById("boton-ingresar");
 const panelLogin = document.querySelector(".panel-login");
+const atribucionLogin = document.querySelector(".atribucion-login");
+const mensajeCargando = document.querySelector(".login-carga");
 
 // Tiempo máximo que la tarjeta queda oculta mientras se comprueba la sesión.
 // Si la API no responde, el formulario se muestra igual: la pantalla nunca
@@ -61,8 +63,10 @@ function loginMostrarErrores(errores) {
     Dashboard un instante después.
 */
 function loginMostrarPanel(visible) {
-    if (panelLogin) {
+    if (panelLogin && atribucionLogin && mensajeCargando) {
         panelLogin.hidden = !visible;
+        atribucionLogin.hidden = !visible;
+        mensajeCargando.hidden = visible;
     }
 }
 
