@@ -39,7 +39,7 @@ Este proyecto nació para el dueño de un gimnasio que anotaba todo en un cuader
 
 | Login | Clientes | Ficha |
 |---|---|---|
-| <img src="docs/mobile-login.png" width="220"> | <img src="docs/mobile-clientes.png" width="220"> | <img src="docs/mobile-ficha.png" width="220"> |
+| <img src="docs/login-celular.png" width="220"> | <img src="docs/clientes-celular.png" width="220"> | <img src="docs/ver-cliente-celular.png" width="220"> |
 
 ---
 
