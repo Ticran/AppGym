@@ -9,8 +9,8 @@ const Pago = require('../models/Pago');
   Reglas de negocio implementadas en ESTA fase:
   - Un cliente paga una vez por mes (índice único { cliente, anio, mes }).
   - No se permiten pagos de meses futuros ni fechas de pago futuras.
-  - El recargo predeterminado es 10% cuando la fecha de pago es el día 11 o
-    posterior; hasta el día 10 inclusive no corresponde recargo.
+  - El recargo predeterminado es 10% cuando la fecha de pago es el día 9 o
+    posterior; hasta el día 8 inclusive no corresponde recargo.
   - El porcentaje de recargo puede personalizarse (por ejemplo 0 para dejarlo
     sin recargo). Si el dueño lo envía explícitamente, se respeta y nunca se
     sobrescribe con el valor predeterminado.
@@ -25,9 +25,9 @@ const Pago = require('../models/Pago');
 
 // ---------- Constantes de negocio ----------
 
-// Hasta el día 10 inclusive no corresponde recargo; desde el 11 se aplica el
+// Hasta el día 8 inclusive no corresponde recargo; desde el 9 se aplica el
 // porcentaje predeterminado.
-const DIA_LIMITE_SIN_RECARGO = 10;
+const DIA_LIMITE_SIN_RECARGO = 8;
 const PORCENTAJE_RECARGO_PREDETERMINADO = 10;
 
 // Diferencia tolerada al comparar importes con decimales (redondeos).
@@ -415,7 +415,7 @@ function responderErrorDePago(error, res, accion, mensajeGenerico) {
   - importeCuota: si no se envía, se toma `cuotaActual` del cliente (la cuota
     puede cambiar mes a mes, por eso se permite enviar otro valor).
   - porcentajeRecargo: si NO se envía, se aplica el valor predeterminado (10%
-    desde el día 11; 0% hasta el día 10 inclusive). Si se envía, se respeta
+    desde el día 9; 0% hasta el día 8 inclusive). Si se envía, se respeta
     tal cual: así el dueño puede dejarlo en 0 o acordar otro porcentaje.
   - importeRecargo: se calcula como porcentajeRecargo% de importeCuota. Si el
     dueño lo envía, debe coincidir con ese cálculo (tolerancia de $0,01): un

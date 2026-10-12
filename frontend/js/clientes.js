@@ -38,6 +38,23 @@ function formatearFecha(fechaISO) {
     return `${dia}/${mes}/${anio}`;
 }
 
+// Fecha de hoy en formato "AAAA-MM-DD" (el mismo formato en que el proyecto
+// guarda las fechas y en que lo acepta <input type="date">). Se calcula con la
+// zona horaria del gimnasio para que muestre el día correcto aunque la PC esté
+// en otra zona (evita mostrar el día anterior o el posterior).
+function fechaDeHoy() {
+    const partes = new Intl.DateTimeFormat("en-US", {
+        timeZone: CLIENTES_ZONA_HORARIA,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).formatToParts(new Date());
+
+    const valor = (tipo) => partes.find((parte) => parte.type === tipo).value;
+
+    return `${valor("year")}-${valor("month")}-${valor("day")}`;
+}
+
 // ---------- Piezas reutilizables ----------
 
 // Identificador de un cliente según su origen:
@@ -104,7 +121,6 @@ function crearFilaCliente(cliente) {
         cliente.dni,
         cliente.telefono,
         formatearPesos(cliente.cuotaActual),
-        formatearFecha(cliente.fechaVencimiento),
     ];
 
     textos.forEach((texto) => {
@@ -130,7 +146,7 @@ function crearTablaClientes(lista) {
     const tabla = document.createElement("table");
     tabla.className = "tabla-clientes";
 
-    const columnas = ["Nombre", "Apellido", "DNI", "Teléfono", "Cuota", "Vencimiento", "Estado", "Acciones"];
+    const columnas = ["Nombre", "Apellido", "DNI", "Teléfono", "Cuota", "Estado", "Acciones"];
 
     const cabecera = document.createElement("thead");
     const filaCabecera = document.createElement("tr");
@@ -168,7 +184,7 @@ function crearTarjetaCliente(cliente) {
 
     item.appendChild(encabezado);
 
-    // Datos: DNI, Teléfono, Cuota, Vencimiento
+    // Datos: DNI, Teléfono, Cuota
     const listaDatos = document.createElement("dl");
     listaDatos.className = "tarjeta-cliente__datos";
 
@@ -176,7 +192,6 @@ function crearTarjetaCliente(cliente) {
         ["DNI", cliente.dni],
         ["Tel", cliente.telefono],
         ["Cuota", formatearPesos(cliente.cuotaActual)],
-        ["Vence", formatearFecha(cliente.fechaVencimiento)],
     ];
 
     pares.forEach((par) => {
@@ -397,6 +412,9 @@ function abrirFormulario() {
     idClienteEnEdicion = null;
     cambiarModoFormulario("creacion");
     limpiarFormulario();
+    // En creación, la fecha de ingreso arranca con hoy (zona horaria del
+    // gimnasio). El campo sigue siendo editable: el dueño puede corregirla.
+    document.getElementById("campo-fechaIngreso").value = fechaDeHoy();
     abrirModalFormulario();
 
     document.getElementById("campo-nombre").focus();
@@ -456,7 +474,6 @@ function cargarDatosCliente(cliente) {
     document.getElementById("campo-telefono").value = cliente.telefono ?? "";
     document.getElementById("campo-fechaIngreso").value = cliente.fechaIngreso;
     document.getElementById("campo-cuota").value = cliente.cuotaActual;
-    document.getElementById("campo-fechaVencimiento").value = cliente.fechaVencimiento;
     document.getElementById("campo-estado").value = cliente.estado;
 }
 
@@ -495,7 +512,6 @@ function obtenerDatosFormulario() {
         telefono: document.getElementById("campo-telefono").value.trim(),
         fechaIngreso: document.getElementById("campo-fechaIngreso").value,
         cuota: Number(document.getElementById("campo-cuota").value),
-        fechaVencimiento: document.getElementById("campo-fechaVencimiento").value,
         estado: document.getElementById("campo-estado").value,
     };
 }
@@ -544,10 +560,6 @@ function validarFormulario(datos) {
         errores.cuota = "La cuota debe ser un número mayor que 0.";
     }
 
-    if (!datos.fechaVencimiento) {
-        errores.fechaVencimiento = "La fecha de vencimiento es obligatoria.";
-    }
-
     if (datos.estado !== "Activo" && datos.estado !== "Inactivo") {
         errores.estado = "El estado debe ser Activo o Inactivo.";
     }
@@ -556,7 +568,7 @@ function validarFormulario(datos) {
 }
 
 function mostrarErrores(errores) {
-    const nombresDeCampos = ["nombre", "apellido", "dni", "telefono", "fechaIngreso", "cuota", "fechaVencimiento", "estado"];
+    const nombresDeCampos = ["nombre", "apellido", "dni", "telefono", "fechaIngreso", "cuota", "estado"];
 
     nombresDeCampos.forEach((campo) => {
         const entrada = document.getElementById("campo-" + campo);
@@ -584,7 +596,6 @@ function construirBodyCliente(datos) {
         telefono: datos.telefono,
         fechaIngreso: datos.fechaIngreso,
         cuotaActual: datos.cuota,
-        fechaVencimiento: datos.fechaVencimiento,
         estado: datos.estado,
     };
 }
@@ -771,12 +782,11 @@ function renderizarFicha(cliente) {
     // Nombre y apellido como encabezado dentro de la ficha
     nombre.textContent = cliente.nombre + " " + cliente.apellido;
 
-    // Campos: DNI, Teléfono, Fecha de ingreso, Cuota actual, Fecha de vencimiento, Estado
+    // Campos: DNI, Teléfono, Fecha de ingreso, Cuota actual, Estado
     lista.appendChild(crearItemFicha("DNI", cliente.dni));
     lista.appendChild(crearItemFicha("Teléfono", cliente.telefono));
     lista.appendChild(crearItemFicha("Fecha de ingreso", formatearFecha(cliente.fechaIngreso)));
     lista.appendChild(crearItemFicha("Cuota actual", formatearPesos(cliente.cuotaActual)));
-    lista.appendChild(crearItemFicha("Fecha de vencimiento", formatearFecha(cliente.fechaVencimiento)));
 
     // Estado con estilo visual reutilizado del listado
     const filaEstado = document.createElement("div");

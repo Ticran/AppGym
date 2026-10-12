@@ -4,8 +4,7 @@ const mongoose = require('mongoose');
   Cliente.js — Modelo de Mongoose para los clientes del gimnasio.
 
   Refleja la estructura que ya usa el frontend (frontend/js/data.js):
-  nombre, apellido, dni, telefono, fechaIngreso, cuotaActual,
-  fechaVencimiento y estado.
+  nombre, apellido, dni, telefono, fechaIngreso, cuotaActual y estado.
 
   Notas:
   - Las fechas se guardan como String en formato "AAAA-MM-DD", igual que en
@@ -55,11 +54,6 @@ const clienteSchema = new mongoose.Schema({
       validator: (valor) => valor > 0,
       message: 'La cuota debe ser un número mayor que 0',
     },
-  },
-  fechaVencimiento: {
-    type: String,
-    required: [true, 'La fecha de vencimiento es obligatoria'],
-    trim: true,
   },
   estado: {
     type: String,

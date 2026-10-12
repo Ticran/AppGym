@@ -75,7 +75,7 @@ Este proyecto nació para el dueño de un gimnasio que anotaba todo en un cuader
 
 | Regla | Detalle |
 |---|---|
-| Recargo por mora | **0 %** hasta el día 10 del mes (inclusive), **10 %** desde el día 11. Se puede ajustar al registrar el pago |
+| Recargo por mora | **0 %** hasta el día 8 del mes (inclusive), **10 %** desde el día 9. Se puede ajustar al registrar el pago |
 | Cálculo | `recargo = cuota × % / 100` · `total = cuota + recargo` (2 decimales) |
 | Pagos parciales | No existen: el importe pagado debe coincidir con el total |
 | Fechas | No se aceptan meses futuros ni fechas de pago futuras |
@@ -233,7 +233,7 @@ Base: `/api`. Todas las rutas requieren sesión, salvo las indicadas como públi
 
 ## 🗄️ Modelo de datos
 
-**`clientes`**: `nombre`, `apellido`, `dni` (único), `telefono`, `fechaIngreso`, `cuotaActual`, `fechaVencimiento`, `estado` (`Activo` | `Inactivo`).
+**`clientes`**: `nombre`, `apellido`, `dni` (único), `telefono`, `fechaIngreso`, `cuotaActual`, `estado` (`Activo` | `Inactivo`).
 
 **`pagos`**: `cliente` (ref), `anio`, `mes`, `importeCuota`, `porcentajeRecargo`, `importeRecargo`, `importeTotal`, `importePagado`, `fechaPago`, `estado`, `nuevaCuotaMesSiguiente` (opcional) y `createdAt`/`updatedAt`.
 

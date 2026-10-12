@@ -13,7 +13,6 @@ const CAMPOS_EDITABLES = [
   'telefono',
   'fechaIngreso',
   'cuotaActual',
-  'fechaVencimiento',
   'estado',
 ];
 

@@ -9,7 +9,7 @@
     Reglas que este formulario respeta (el backend es la autoridad):
     - Un cliente paga una vez por mes y año: el backend responde 409 si se repite.
     - No se permiten meses futuros ni fechas de pago futuras.
-    - Recargo sugerido: 0% hasta el día 10 y 10% desde el día 11. Se puede
+    - Recargo sugerido: 0% hasta el día 8 y 10% desde el día 9. Se puede
       cambiar (0% lo quita) y una modificación explícita nunca se sobrescribe.
     - No hay pagos parciales: importePagado = importeTotal.
     - `nuevaCuotaMesSiguiente` es opcional y NO modifica la cuota del cliente.
@@ -34,7 +34,7 @@ const PAGOS_MESES = [
 ];
 
 // Mismas reglas que el backend (models/Pago.js y controllers/pagosController.js).
-const PAGOS_DIA_LIMITE_SIN_RECARGO = 10;
+const PAGOS_DIA_LIMITE_SIN_RECARGO = 8;
 const PAGOS_PORCENTAJE_PREDETERMINADO = 10;
 const PAGOS_ZONA_HORARIA = "America/Argentina/Buenos_Aires";
 
@@ -75,7 +75,7 @@ function pagoEsMesFuturo(anio, mes) {
     return anio > actual.anio || (anio === actual.anio && mes > actual.mes);
 }
 
-// Porcentaje sugerido: 0% hasta el día 10 inclusive y 10% desde el día 11.
+// Porcentaje sugerido: 0% hasta el día 8 inclusive y 10% desde el día 9.
 function pagoPorcentajePredeterminado(fechaPago) {
     const dia = Number(String(fechaPago).slice(8, 10));
 
@@ -242,6 +242,64 @@ function pagoActualizarMesesDisponibles() {
     }
 }
 
+/*
+    Sincroniza la fecha de pago con el período seleccionado (mes y año del
+    selector): conserva el día que hoy tiene el campo de fecha, y si ese día no
+    existe en el mes de destino lo ajusta al último día válido de ese mes
+    (por ejemplo, 31 → 30 de septiembre o 28/29 de febrero).
+
+    La fecha se arma con Date.UTC para que JavaScript NO desborde un día
+    inválido hacia el mes siguiente (el 31 de septiembre nunca pasa a octubre).
+
+    El campo sigue siendo editable: esta sincronización sólo ocurre al cambiar
+    el mes o el año del período; una edición manual de la fecha no se toca
+    mientras esos selectores no cambien.
+*/
+function pagoSincronizarFechaConPeriodo() {
+    const mes = pagoANumero(pagoCampoMes.value);
+    const anio = pagoANumero(pagoCampoAnio.value);
+
+    if (
+        mes === null ||
+        anio === null ||
+        !Number.isInteger(mes) ||
+        mes < 1 ||
+        mes > 12 ||
+        !Number.isInteger(anio)
+    ) {
+        return;
+    }
+
+    // Día que hoy tiene el campo de fecha; si está vacío o inválido se usa el
+    // día de hoy (mismo cálculo con zona horaria que usa todo el formulario).
+    const coincide = /^(\d{4})-(\d{2})-(\d{2})$/.exec(pagoCampoFecha.value);
+    const diaActual = coincide !== null ? Number(coincide[3]) : Number(pagoFechaDeHoy().slice(8, 10));
+
+    // Último día del mes de destino: Date.UTC(año, mes, 0) es el día 0 del mes
+    // siguiente, es decir, el último día del mes elegido.
+    const ultimoDiaDelMes = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+    const dia = Math.min(diaActual, ultimoDiaDelMes);
+
+    const anioTexto = String(anio);
+    const mesTexto = String(mes).padStart(2, "0");
+    const diaTexto = String(dia).padStart(2, "0");
+
+    pagoCampoFecha.value = `${anioTexto}-${mesTexto}-${diaTexto}`;
+
+    // El recargo sugerido depende del día de la fecha de pago: se re-aplica la
+    // misma lógica que al editar la fecha a mano (respeta un % manual).
+    // Nota: asignar `.value` no dispara eventos, así que no hay recursividad.
+    pagoManejarCambioDeFecha();
+}
+
+// Cambió el mes o el año del período: primero se ajustan los meses permitidos
+// (puede corregir el mes si el año elegido es el actual) y recién después se
+// sincroniza la fecha de pago con el período realmente seleccionado.
+function pagoManejarCambioDePeriodo() {
+    pagoActualizarMesesDisponibles();
+    pagoSincronizarFechaConPeriodo();
+}
+
 // ---------- Resumen de importes ----------
 
 // Recalcula el recargo y el total mostrados a partir de la cuota y el porcentaje.
@@ -289,8 +347,8 @@ function pagoBloquearFormulario(bloquear) {
     - Fecha de pago: hoy (no se permiten fechas futuras).
     - Cuota: la cuota actual real del cliente (se puede ajustar el importe de
       este mes; NO se modifica la cuota del cliente).
-    - Recargo: el sugerido para la fecha de hoy (0% hasta el día 10, 10% desde
-      el día 11). El dueño puede cambiarlo o ponerlo en 0.
+    - Recargo: el sugerido para la fecha de hoy (0% hasta el día 8, 10% desde
+      el día 9). El dueño puede cambiarlo o ponerlo en 0.
     - Nueva cuota del mes siguiente: vacía (es opcional).
 */
 function pagoPrepararFormulario() {
@@ -302,7 +360,7 @@ function pagoPrepararFormulario() {
         pagoClienteCargado.nombre +
         " " +
         pagoClienteCargado.apellido +
-        " — DNI " +
+        " — DNI: " +
         pagoClienteCargado.dni;
     pagoTextoCliente.hidden = false;
 
@@ -610,7 +668,8 @@ function pagoInicializar() {
     pagoCampoCuota.addEventListener("input", pagoActualizarResumen);
     pagoCampoPorcentaje.addEventListener("input", pagoManejarCambioDePorcentaje);
     pagoCampoFecha.addEventListener("change", pagoManejarCambioDeFecha);
-    pagoCampoAnio.addEventListener("change", pagoActualizarMesesDisponibles);
+    pagoCampoAnio.addEventListener("change", pagoManejarCambioDePeriodo);
+    pagoCampoMes.addEventListener("change", pagoManejarCambioDePeriodo);
 
     // Esc cierra el <dialog> por su cuenta: el mensaje se limpia igual que con
     // Cerrar o Cancelar (pagoCerrarPanel hace exactamente lo mismo).
