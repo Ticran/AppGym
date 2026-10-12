@@ -241,7 +241,9 @@ function filtrarClientes(texto) {
     return clientes.filter((cliente) => {
         const coincideConNombre = normalizar(cliente.nombre).includes(textoBusqueda);
         const coincideConApellido = normalizar(cliente.apellido).includes(textoBusqueda);
-        const coincideConDni = normalizar(cliente.dni).includes(textoBusqueda);
+        // El DNI es opcional: un cliente sin DNI (null/undefined/"") no rompe
+        // la búsqueda y simplemente no coincide por ese campo.
+        const coincideConDni = normalizar(cliente.dni ?? "").includes(textoBusqueda);
 
         return coincideConNombre || coincideConApellido || coincideConDni;
     });
@@ -448,8 +450,10 @@ function cambiarModoFormulario(modo) {
 function cargarDatosCliente(cliente) {
     document.getElementById("campo-nombre").value = cliente.nombre;
     document.getElementById("campo-apellido").value = cliente.apellido;
-    document.getElementById("campo-dni").value = cliente.dni;
-    document.getElementById("campo-telefono").value = cliente.telefono;
+    // DNI y teléfono son opcionales: si el cliente no tiene, se carga vacío
+    // (nunca "null"/"undefined" en el campo).
+    document.getElementById("campo-dni").value = cliente.dni ?? "";
+    document.getElementById("campo-telefono").value = cliente.telefono ?? "";
     document.getElementById("campo-fechaIngreso").value = cliente.fechaIngreso;
     document.getElementById("campo-cuota").value = cliente.cuotaActual;
     document.getElementById("campo-fechaVencimiento").value = cliente.fechaVencimiento;
@@ -498,10 +502,21 @@ function obtenerDatosFormulario() {
 
 // En modo creación se comparan todos los clientes.
 // En modo edición se ignora el propio cliente (su DNI sigue siendo válido).
+// El DNI es OPCIONAL: si está vacío no es un DNI real, no participa en la
+// comprobación y varios clientes pueden quedar sin DNI. También se ignoran
+// clientes con dni null/undefined (datos viejos).
 function dniRepetido(dni) {
+    if (!dni) {
+        return false;
+    }
+
     const dniBuscado = dni.toLowerCase();
+
     return clientes.some(
-        (cliente) => identificarCliente(cliente) !== idClienteEnEdicion && cliente.dni.toLowerCase() === dniBuscado
+        (cliente) =>
+            identificarCliente(cliente) !== idClienteEnEdicion &&
+            typeof cliente.dni === "string" &&
+            cliente.dni.toLowerCase() === dniBuscado
     );
 }
 
@@ -517,14 +532,8 @@ function validarFormulario(datos) {
         errores.apellido = "El apellido es obligatorio.";
     }
 
-    if (!datos.dni) {
-        errores.dni = "El DNI es obligatorio.";
-    } else if (dniRepetido(datos.dni)) {
+    if (dniRepetido(datos.dni)) {
         errores.dni = "Ya existe un cliente con ese DNI.";
-    }
-
-    if (!datos.telefono) {
-        errores.telefono = "El teléfono es obligatorio.";
     }
 
     if (!datos.fechaIngreso) {

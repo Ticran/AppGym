@@ -24,6 +24,23 @@ function ocultarCredenciales(mensaje) {
 }
 
 /*
+  El DNI y el teléfono son OPCIONALES. Normaliza el "no informado":
+  - undefined o null -> "" (nunca se guarda null);
+  - cualquier otro valor -> string sin espacios alrededor; si queda vacío, "".
+  Un DNI "" NO participa en la comprobación de duplicados: la unicidad de los
+  DNI reales la resuelve el índice único PARCIAL del modelo (dni_unico_informado),
+  que sólo cubre cadenas no vacías. Así una cadena vacía nunca se trata como
+  un DNI real.
+*/
+function normalizarCampoOpcional(valor) {
+  if (valor === undefined || valor === null) {
+    return '';
+  }
+
+  return String(valor).trim();
+}
+
+/*
   GET /api/clientes
   Devuelve todos los clientes almacenados en MongoDB.
   Por ahora solo lee: no inserta, edita ni elimina nada.
@@ -47,7 +64,13 @@ async function obtenerClientes(req, res) {
 */
 async function crearCliente(req, res) {
   try {
-    const cliente = await Cliente.create(req.body);
+    // DNI y teléfono opcionales: si no vienen informados se guardan como ""
+    // y quedan fuera del índice único parcial de DNI (ver modelo).
+    const datos = { ...req.body };
+    datos.dni = normalizarCampoOpcional(datos.dni);
+    datos.telefono = normalizarCampoOpcional(datos.telefono);
+
+    const cliente = await Cliente.create(datos);
     res.status(201).json(cliente);
   } catch (error) {
     // Datos que no cumplen el schema: campos requeridos faltantes, cuota <= 0,
@@ -58,7 +81,9 @@ async function crearCliente(req, res) {
       return res.status(400).json({ error: 'Datos inválidos', detalles });
     }
 
-    // DNI duplicado: el índice único del schema hace que MongoDB devuelva E11000.
+    // DNI duplicado: el índice único PARCIAL del modelo hace que MongoDB
+    // devuelva E11000, pero sólo cuando el DNI informado ya existe en otro
+    // cliente (los DNI vacíos no participan en ese índice).
     if (error.code === 11000) {
       console.error('Intento de crear un cliente con un DNI ya registrado');
       return res.status(409).json({ error: 'Ya existe un cliente con ese DNI' });
@@ -92,6 +117,17 @@ async function actualizarCliente(req, res) {
         cambios[campo] = req.body[campo];
       }
     });
+
+    // DNI y teléfono opcionales: si vienen informados pero vacíos se guardan
+    // como "" (nunca null) y quedan fuera del índice único parcial de DNI.
+    // Si no vienen en el body, no se tocan (actualización parcial).
+    if (cambios.dni !== undefined) {
+      cambios.dni = normalizarCampoOpcional(cambios.dni);
+    }
+
+    if (cambios.telefono !== undefined) {
+      cambios.telefono = normalizarCampoOpcional(cambios.telefono);
+    }
 
     if (Object.keys(cambios).length === 0) {
       return res.status(400).json({
@@ -131,7 +167,8 @@ async function actualizarCliente(req, res) {
       });
     }
 
-    // DNI que ya pertenece a otro cliente: índice único => E11000.
+    // DNI que ya pertenece a otro cliente: índice único parcial => E11000
+    // (sólo aplica a DNI informados; un DNI vaciado no genera duplicado).
     if (error.code === 11000) {
       console.error('Intento de actualizar un cliente con un DNI ya registrado');
       return res.status(409).json({ error: 'Ya existe un cliente con ese DNI' });
