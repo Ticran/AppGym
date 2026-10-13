@@ -72,16 +72,20 @@
             Registro de pago del cliente.
             Es un modal nativo (<dialog>), igual que "Editar pago": se abre con el
             botón "Registrar pago" y recién ahí se consulta el cliente en la API y
-            se completa el formulario. Se cierra con Cerrar, Cancelar o Esc.
+            se completa el formulario. Se cierra con la X del encabezado, Cancelar o Esc.
+            Layout de tres zonas (.modal-pago): encabezado fijo con el título y el
+            cliente, contenido central con scroll propio y pie siempre visible con
+            el resumen (total) y las acciones.
         -->
-        <dialog class="modal-formulario" id="panel-pago" aria-labelledby="titulo-formulario-pago">
-            <div class="panel-formulario__cabecera">
-                <h2 class="panel-formulario__titulo" id="titulo-formulario-pago">Registrar pago</h2>
-                <button class="boton-accion" type="button" id="boton-cerrar-pago">Cerrar</button>
+        <dialog class="modal-formulario modal-pago" id="panel-pago" aria-labelledby="titulo-formulario-pago">
+            <div class="panel-formulario__cabecera modal-pago__cabecera">
+                <div class="modal-pago__titulo">
+                    <h2 class="panel-formulario__titulo" id="titulo-formulario-pago">Registrar pago</h2>
+                    <p class="panel-pago__cliente" id="pago-cliente-cargando" hidden>Cargando datos del cliente...</p>
+                    <p class="panel-pago__cliente" id="pago-cliente" hidden></p>
+                </div>
+                <button class="modal-pago__cerrar" type="button" id="boton-cerrar-pago" aria-label="Cerrar"><span aria-hidden="true">×</span></button>
             </div>
-
-            <p class="panel-pago__cliente" id="pago-cliente-cargando" hidden>Cargando datos del cliente...</p>
-            <p class="panel-pago__cliente" id="pago-cliente" hidden></p>
 
             <form class="formulario" id="formulario-pago" novalidate>
                 <div class="formulario__campo">
@@ -105,23 +109,32 @@
                 <div class="formulario__campo">
                     <label for="campo-pago-cuota">Cuota de este mes</label>
                     <input type="number" id="campo-pago-cuota" name="importeCuota" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="ayuda-pago-cuota error-pago-cuota" />
-                    <p class="formulario__ayuda" id="ayuda-pago-cuota">Se completa con la cuota actual del cliente. Cambiarla acá no modifica la cuota actual del cliente.</p>
+                    <p class="formulario__ayuda" id="ayuda-pago-cuota">Se completa con la cuota actual del cliente; modificarla acá no cambia su cuota.</p>
                     <p class="formulario__error" id="error-pago-cuota" hidden></p>
                 </div>
 
                 <div class="formulario__campo">
                     <label for="campo-pago-porcentaje">Recargo (%)</label>
                     <input type="number" id="campo-pago-porcentaje" name="porcentajeRecargo" min="0" step="0.01" inputmode="decimal" required aria-describedby="ayuda-pago-porcentaje error-pago-porcentaje" />
-                    <p class="formulario__ayuda" id="ayuda-pago-porcentaje">El valor sugerido es 0% hasta el día 8 y 10% desde el día 9. Con 0% no hay recargo.</p>
+                    <p class="formulario__ayuda" id="ayuda-pago-porcentaje">Sugerido: 0% hasta el día 8 inclusive y 10% desde el día 9. Con 0% no hay recargo.</p>
                     <p class="formulario__error" id="error-pago-porcentaje" hidden></p>
                 </div>
 
                 <div class="formulario__campo">
                     <label for="campo-pago-nueva-cuota">Nueva cuota del mes siguiente (opcional)</label>
                     <input type="number" id="campo-pago-nueva-cuota" name="nuevaCuotaMesSiguiente" min="0.01" step="0.01" inputmode="decimal" aria-describedby="ayuda-pago-nueva-cuota error-pago-nueva-cuota" />
-                    <p class="formulario__ayuda" id="ayuda-pago-nueva-cuota">Queda guardada en el pago como dato para el mes próximo. No cambia la cuota actual del cliente.</p>
+                    <p class="formulario__ayuda" id="ayuda-pago-nueva-cuota">Se guarda en el pago como dato del mes próximo; no cambia la cuota actual del cliente.</p>
                     <p class="formulario__error" id="error-pago-nueva-cuota" hidden></p>
                 </div>
+
+            </form>
+
+            <!-- Pie siempre visible: mensajes, resumen y acciones. El botón de
+                 envío lleva form="formulario-pago" porque el pie queda fuera del
+                 <form>: el evento submit se dispara igual sobre el formulario. -->
+            <div class="modal-pago__pie">
+                <!-- Mensajes de éxito o error del registro -->
+                <p class="aviso-pago" id="pago-mensaje" hidden role="status" aria-live="polite"></p>
 
                 <!-- Resumen de importes. El backend recalcula y valida estos valores. -->
                 <div class="resumen-pago" id="resumen-pago">
@@ -139,14 +152,11 @@
                     </p>
                 </div>
 
-                <!-- Mensajes de éxito o error del registro -->
-                <p class="aviso-pago" id="pago-mensaje" hidden role="status" aria-live="polite"></p>
-
                 <div class="formulario__acciones">
-                    <button type="submit" class="boton boton--primario" id="boton-guardar-pago">Registrar pago</button>
+                    <button type="submit" form="formulario-pago" class="boton boton--primario" id="boton-guardar-pago">Registrar pago</button>
                     <button type="button" class="boton" id="boton-cancelar-pago">Cancelar</button>
                 </div>
-            </form>
+            </div>
         </dialog>
         <!--
             Historial de pagos del cliente.
@@ -187,72 +197,83 @@
             Reutiliza las mismas reglas del registro: el backend es la autoridad.
             El cliente del pago NO se puede cambiar: el pago pertenece a la ficha
             que se está consultando.
+            Layout de tres zonas, con los mismos criterios visuales que el modal
+            Registrar pago: encabezado fijo con X de cierre, contenido con scroll
+            propio cuando hace falta y pie estable con el resumen y las acciones.
         -->
         <dialog class="modal-editar-pago" id="modal-editar-pago">
-            <div class="panel-formulario__cabecera">
-                    <h2 class="panel-formulario__titulo" id="titulo-editar-pago">Editar pago</h2>
-                    <button class="boton-accion" type="button" id="boton-cerrar-edicion-pago">Cerrar</button>
-                </div>
+            <div class="panel-formulario__cabecera modal-editar-pago__cabecera">
+                <h2 class="panel-formulario__titulo" id="titulo-editar-pago">Editar pago</h2>
+                <button class="modal-editar-pago__cerrar" type="button" id="boton-cerrar-edicion-pago" aria-label="Cerrar"><span aria-hidden="true">×</span></button>
+            </div>
             <form class="formulario" id="formulario-editar-pago" novalidate>
+                <div class="modal-editar-pago__contenido">
                 
 
-                <div class="formulario__campo">
-                    <label for="campo-editar-pago-mes">Mes</label>
-                    <select id="campo-editar-pago-mes" name="mes" required aria-describedby="error-editar-pago-mes"></select>
-                    <p class="formulario__error" id="error-editar-pago-mes" hidden></p>
+                    <div class="formulario__campo">
+                        <label for="campo-editar-pago-mes">Mes</label>
+                        <select id="campo-editar-pago-mes" name="mes" required aria-describedby="error-editar-pago-mes"></select>
+                        <p class="formulario__error" id="error-editar-pago-mes" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-editar-pago-anio">Año</label>
+                        <select id="campo-editar-pago-anio" name="anio" required aria-describedby="error-editar-pago-anio"></select>
+                        <p class="formulario__error" id="error-editar-pago-anio" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-editar-pago-fecha">Fecha de pago</label>
+                        <input type="date" id="campo-editar-pago-fecha" name="fechaPago" required aria-describedby="error-editar-pago-fecha" />
+                        <p class="formulario__error" id="error-editar-pago-fecha" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-editar-pago-cuota">Cuota de este mes</label>
+                        <input type="number" id="campo-editar-pago-cuota" name="importeCuota" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="error-editar-pago-cuota" />
+                        <p class="formulario__error" id="error-editar-pago-cuota" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-editar-pago-porcentaje">Recargo (%)</label>
+                        <input type="number" id="campo-editar-pago-porcentaje" name="porcentajeRecargo" min="0" step="0.01" inputmode="decimal" required aria-describedby="error-editar-pago-porcentaje" />
+                        <p class="formulario__error" id="error-editar-pago-porcentaje" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-editar-pago-nueva-cuota">Nueva cuota del mes siguiente (opcional)</label>
+                        <input type="number" id="campo-editar-pago-nueva-cuota" name="nuevaCuotaMesSiguiente" min="0.01" step="0.01" inputmode="decimal" aria-describedby="error-editar-pago-nueva-cuota" />
+                        <p class="formulario__error" id="error-editar-pago-nueva-cuota" hidden></p>
+                    </div>
                 </div>
 
-                <div class="formulario__campo">
-                    <label for="campo-editar-pago-anio">Año</label>
-                    <select id="campo-editar-pago-anio" name="anio" required aria-describedby="error-editar-pago-anio"></select>
-                    <p class="formulario__error" id="error-editar-pago-anio" hidden></p>
-                </div>
+                <!-- Pie estable: mensajes, resumen y acciones; queda fuera del
+                     área con scroll pero dentro del mismo <form>, así la
+                     asociación y el envío no cambian. -->
+                <div class="modal-editar-pago__pie">
+                    <!-- Mensajes de éxito o error de la edición -->
+                    <p class="aviso-pago" id="editar-pago-mensaje" hidden role="status" aria-live="polite"></p>
 
-                <div class="formulario__campo">
-                    <label for="campo-editar-pago-fecha">Fecha de pago</label>
-                    <input type="date" id="campo-editar-pago-fecha" name="fechaPago" required aria-describedby="error-editar-pago-fecha" />
-                    <p class="formulario__error" id="error-editar-pago-fecha" hidden></p>
-                </div>
+                    <!-- Resumen de importes: el backend recalcula y valida estos valores -->
+                    <div class="resumen-pago" id="resumen-editar-pago">
+                        <p class="resumen-pago__fila">
+                            <span class="resumen-pago__etiqueta">Cuota</span>
+                            <span class="resumen-pago__valor" id="resumen-editar-pago-cuota">—</span>
+                        </p>
+                        <p class="resumen-pago__fila">
+                            <span class="resumen-pago__etiqueta">Recargo</span>
+                            <span class="resumen-pago__valor" id="resumen-editar-pago-recargo">—</span>
+                        </p>
+                        <p class="resumen-pago__fila resumen-pago__fila--total">
+                            <span class="resumen-pago__etiqueta">Total a pagar</span>
+                            <span class="resumen-pago__valor" id="resumen-editar-pago-total">—</span>
+                        </p>
+                    </div>
 
-                <div class="formulario__campo">
-                    <label for="campo-editar-pago-cuota">Cuota de este mes</label>
-                    <input type="number" id="campo-editar-pago-cuota" name="importeCuota" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="error-editar-pago-cuota" />
-                    <p class="formulario__error" id="error-editar-pago-cuota" hidden></p>
-                </div>
-
-                <div class="formulario__campo">
-                    <label for="campo-editar-pago-porcentaje">Recargo (%)</label>
-                    <input type="number" id="campo-editar-pago-porcentaje" name="porcentajeRecargo" min="0" step="0.01" inputmode="decimal" required aria-describedby="error-editar-pago-porcentaje" />
-                    <p class="formulario__error" id="error-editar-pago-porcentaje" hidden></p>
-                </div>
-
-                <div class="formulario__campo">
-                    <label for="campo-editar-pago-nueva-cuota">Nueva cuota del mes siguiente (opcional)</label>
-                    <input type="number" id="campo-editar-pago-nueva-cuota" name="nuevaCuotaMesSiguiente" min="0.01" step="0.01" inputmode="decimal" aria-describedby="error-editar-pago-nueva-cuota" />
-                    <p class="formulario__error" id="error-editar-pago-nueva-cuota" hidden></p>
-                </div>
-
-                <!-- Resumen de importes: el backend recalcula y valida estos valores -->
-                <div class="resumen-pago" id="resumen-editar-pago">
-                    <p class="resumen-pago__fila">
-                        <span class="resumen-pago__etiqueta">Cuota</span>
-                        <span class="resumen-pago__valor" id="resumen-editar-pago-cuota">—</span>
-                    </p>
-                    <p class="resumen-pago__fila">
-                        <span class="resumen-pago__etiqueta">Recargo</span>
-                        <span class="resumen-pago__valor" id="resumen-editar-pago-recargo">—</span>
-                    </p>
-                    <p class="resumen-pago__fila resumen-pago__fila--total">
-                        <span class="resumen-pago__etiqueta">Total a pagar</span>
-                        <span class="resumen-pago__valor" id="resumen-editar-pago-total">—</span>
-                    </p>
-                </div>
-
-                <p class="aviso-pago" id="editar-pago-mensaje" hidden role="status" aria-live="polite"></p>
-
-                <div class="formulario__acciones">
-                    <button type="submit" class="boton boton--primario" id="boton-guardar-edicion-pago">Guardar cambios</button>
-                    <button type="button" class="boton" id="boton-cancelar-edicion-pago">Cancelar</button>
+                    <div class="formulario__acciones">
+                        <button type="submit" class="boton boton--primario" id="boton-guardar-edicion-pago">Guardar cambios</button>
+                        <button type="button" class="boton" id="boton-cancelar-edicion-pago">Cancelar</button>
+                    </div>
                 </div>
             </form>
         </dialog>

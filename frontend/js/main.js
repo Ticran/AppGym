@@ -137,6 +137,22 @@ function dashboardNombreDelPago(pago, clientesPorId) {
     return `${cliente.nombre} ${cliente.apellido}`;
 }
 
+// Crea el nombre del cliente como enlace a su ficha (cliente.html?id=...),
+// con el mismo destino que el botón "Ver" del listado de clientes. Si no hay
+// id utilizable (dato ausente o cliente eliminado) devuelve un <span> con el
+// mismo texto: nunca se enlaza a un destino inválido.
+function dashboardCrearNombreEnlace(idCliente, texto) {
+    const nombre = document.createElement(idCliente ? "a" : "span");
+    nombre.className = "item-lista__nombre";
+
+    if (idCliente) {
+        nombre.href = "cliente.html?id=" + idCliente;
+    }
+
+    nombre.textContent = texto;
+    return nombre;
+}
+
 function dashboardRenderizarUltimosPagos(pagos, clientesPorId) {
     const hayPagos = pagos.length > 0;
 
@@ -148,9 +164,13 @@ function dashboardRenderizarUltimosPagos(pagos, clientesPorId) {
         const item = document.createElement("li");
         item.className = "item-lista";
 
-        const nombre = document.createElement("span");
-        nombre.className = "item-lista__nombre";
-        nombre.textContent = dashboardNombreDelPago(pago, clientesPorId);
+        // El nombre enlaza a la ficha si el cliente existe; si fue eliminado,
+        // queda como texto con la etiqueta neutra de siempre (sin enlace).
+        const cliente = clientesPorId.get(String(pago.cliente));
+        const nombre = dashboardCrearNombreEnlace(
+            cliente && cliente._id ? String(cliente._id) : null,
+            dashboardNombreDelPago(pago, clientesPorId)
+        );
 
         const valores = document.createElement("div");
         valores.className = "item-lista__valores";
@@ -202,9 +222,10 @@ function dashboardRenderizarPendientes(pendientes) {
         const item = document.createElement("li");
         item.className = "item-lista";
 
-        const nombre = document.createElement("span");
-        nombre.className = "item-lista__nombre";
-        nombre.textContent = `${cliente.nombre} ${cliente.apellido}`;
+        const nombre = dashboardCrearNombreEnlace(
+            cliente._id ? String(cliente._id) : null,
+            `${cliente.nombre} ${cliente.apellido}`
+        );
 
         const importe = document.createElement("span");
         importe.className = "item-lista__valor";

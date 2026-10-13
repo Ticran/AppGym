@@ -72,67 +72,76 @@
         <p class="listado-clientes__vacio" id="aviso-exito-listado" hidden></p>
 
         <!--
-            Formulario para agregar o editar un cliente.
-            Es un modal nativo (<dialog>), igual que "Editar pago" en cliente.html:
-            lo abre clientes.js y se cierra con Cerrar, Cancelar o Esc.
+            Formulario para agregar o editar un cliente (un único modal: el
+            título y el botón Guardar los cambia clientes.js según el modo).
+            Es un modal nativo (<dialog>): se cierra con la X, Cancelar o Esc.
+            Layout de tres zonas (.modal-cliente), con los mismos criterios que
+            los modales de pagos: encabezado fijo, contenido con scroll propio
+            y pie con el error general y las acciones.
         -->
-        <dialog class="modal-formulario" id="panel-formulario" aria-labelledby="titulo-formulario">
-            <div class="panel-formulario__cabecera">
+        <dialog class="modal-formulario modal-cliente" id="panel-formulario" aria-labelledby="titulo-formulario">
+            <div class="panel-formulario__cabecera modal-cliente__cabecera">
                 <h2 class="panel-formulario__titulo" id="titulo-formulario">Agregar cliente</h2>
-                <button class="boton-accion" type="button" id="boton-cerrar-formulario">Cerrar</button>
+                <button class="modal-cliente__cerrar" type="button" id="boton-cerrar-formulario" aria-label="Cerrar"><span aria-hidden="true">×</span></button>
             </div>
 
             <form class="formulario" id="formulario-cliente" novalidate>
-                <div class="formulario__campo">
-                    <label for="campo-nombre">Nombre</label>
-                    <input type="text" id="campo-nombre" name="nombre" autocomplete="off" required aria-describedby="error-nombre" />
-                    <p class="formulario__error" id="error-nombre" hidden></p>
+                <div class="modal-cliente__contenido">
+                    <div class="formulario__campo">
+                        <label for="campo-nombre">Nombre</label>
+                        <input type="text" id="campo-nombre" name="nombre" autocomplete="off" required aria-describedby="error-nombre" />
+                        <p class="formulario__error" id="error-nombre" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-apellido">Apellido</label>
+                        <input type="text" id="campo-apellido" name="apellido" autocomplete="off" required aria-describedby="error-apellido" />
+                        <p class="formulario__error" id="error-apellido" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-dni">DNI (opcional)</label>
+                        <input type="text" id="campo-dni" name="dni" autocomplete="off" inputmode="numeric" aria-describedby="error-dni" />
+                        <p class="formulario__error" id="error-dni" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-telefono">Teléfono (opcional)</label>
+                        <input type="tel" id="campo-telefono" name="telefono" autocomplete="off" aria-describedby="error-telefono" />
+                        <p class="formulario__error" id="error-telefono" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-fechaIngreso">Fecha de ingreso</label>
+                        <input type="date" id="campo-fechaIngreso" name="fechaIngreso" required aria-describedby="error-fechaIngreso" />
+                        <p class="formulario__error" id="error-fechaIngreso" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-cuota">Cuota actual</label>
+                        <input type="number" id="campo-cuota" name="cuota" min="1" step="0.01" inputmode="numeric" required aria-describedby="error-cuota" />
+                        <p class="formulario__error" id="error-cuota" hidden></p>
+                    </div>
+
+                    <div class="formulario__campo">
+                        <label for="campo-estado">Estado</label>
+                        <select id="campo-estado" name="estado" required aria-describedby="error-estado">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                        <p class="formulario__error" id="error-estado" hidden></p>
+                    </div>
                 </div>
 
-                <div class="formulario__campo">
-                    <label for="campo-apellido">Apellido</label>
-                    <input type="text" id="campo-apellido" name="apellido" autocomplete="off" required aria-describedby="error-apellido" />
-                    <p class="formulario__error" id="error-apellido" hidden></p>
-                </div>
+                <!-- Pie: error general y acciones, fuera del área con scroll
+                     pero dentro del mismo <form> (asociación y envío sin cambios). -->
+                <div class="modal-cliente__pie">
+                    <p class="formulario__error" id="error-formulario" hidden></p>
 
-                <div class="formulario__campo">
-                    <label for="campo-dni">DNI (opcional)</label>
-                    <input type="text" id="campo-dni" name="dni" autocomplete="off" inputmode="numeric" aria-describedby="error-dni" />
-                    <p class="formulario__error" id="error-dni" hidden></p>
-                </div>
-
-                <div class="formulario__campo">
-                    <label for="campo-telefono">Teléfono (opcional)</label>
-                    <input type="tel" id="campo-telefono" name="telefono" autocomplete="off" aria-describedby="error-telefono" />
-                    <p class="formulario__error" id="error-telefono" hidden></p>
-                </div>
-
-                <div class="formulario__campo">
-                    <label for="campo-fechaIngreso">Fecha de ingreso</label>
-                    <input type="date" id="campo-fechaIngreso" name="fechaIngreso" required aria-describedby="error-fechaIngreso" />
-                    <p class="formulario__error" id="error-fechaIngreso" hidden></p>
-                </div>
-
-                <div class="formulario__campo">
-                    <label for="campo-cuota">Cuota actual</label>
-                    <input type="number" id="campo-cuota" name="cuota" min="1" step="0.01" inputmode="numeric" required aria-describedby="error-cuota" />
-                    <p class="formulario__error" id="error-cuota" hidden></p>
-                </div>
-
-                <div class="formulario__campo">
-                    <label for="campo-estado">Estado</label>
-                    <select id="campo-estado" name="estado" required aria-describedby="error-estado">
-                        <option value="Activo">Activo</option>
-                        <option value="Inactivo">Inactivo</option>
-                    </select>
-                    <p class="formulario__error" id="error-estado" hidden></p>
-                </div>
-
-                <p class="formulario__error" id="error-formulario" hidden></p>
-
-                <div class="formulario__acciones">
-                    <button type="submit" class="boton boton--primario" id="boton-guardar-cliente">Guardar cliente</button>
-                    <button type="button" class="boton" id="boton-cancelar-formulario">Cancelar</button>
+                    <div class="formulario__acciones">
+                        <button type="submit" class="boton boton--primario" id="boton-guardar-cliente">Guardar cliente</button>
+                        <button type="button" class="boton" id="boton-cancelar-formulario">Cancelar</button>
+                    </div>
                 </div>
             </form>
         </dialog>

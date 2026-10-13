@@ -732,6 +732,23 @@ a.boton-accion:active {
 
 .item-lista__nombre {
     font-weight: 500;
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+/* El nombre del cliente en los paneles del Dashboard es un enlace a su ficha.
+   Estado normal: mismo color y peso que el resto del listado, sin subrayado.
+   Hover: variación moderada al azul primario + subrayado discreto, únicamente
+   en interacción (sin animaciones). */
+a.item-lista__nombre:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+a.item-lista__nombre:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 .item-lista__valor {
@@ -1125,6 +1142,335 @@ a.boton-accion:active {
 .modal-editar-pago::backdrop,
 .modal-formulario::backdrop {
     background-color: rgba(31, 41, 55, 0.5);
+}
+
+/* ---------- Modal "Registrar pago" (cliente.html): layout de tres zonas ----------
+   Sólo este modal (.modal-pago) se ve afectado: encabezado fijo con título y
+   cliente, contenido central con scroll propio y pie siempre visible con el
+   resumen (total) y las acciones. Los demás modales conservan su estilo. */
+
+/* Flex únicamente cuando está abierto: si no, un display flex mostraría el
+   <dialog> cerrado sobre la página (el UA lo oculta con dialog:not([open])). */
+.modal-pago[open] {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+}
+
+/* Encabezado: no se encoge ni scrollea */
+.modal-pago__cabecera {
+    flex-shrink: 0;
+}
+
+.modal-pago__titulo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.modal-pago .panel-pago__cliente {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Botón X de cierre: área táctil cómoda y foco visible, sin competir con la
+   acción principal (antes era un botón de texto "Cerrar" con borde azul). */
+.modal-pago__cerrar {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    font-size: 1.375rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.modal-pago__cerrar:hover {
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+.modal-pago__cerrar:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Contenido central: el formulario es la única zona con scroll. Si todo entra,
+   no aparece scrollbar; si no crece, se desplaza sin tapar el pie. */
+.modal-pago .formulario {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Pie: hermano flex del formulario, nunca se superpone a los campos.
+   El borde superior lo separa del contenido desplazable. */
+.modal-pago__pie {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Resumen del pie: importes en línea, sin caja ni borde propios (el pie ya
+   está delimitado). El total se alinea a la derecha, junto a las acciones. */
+.modal-pago .resumen-pago {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1.5rem;
+    padding: 0;
+    border: none;
+}
+
+.modal-pago .resumen-pago__fila {
+    justify-content: flex-start;
+    gap: 0.375rem;
+}
+
+.modal-pago .resumen-pago__fila--total {
+    margin-left: auto;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* Acciones a la derecha (misma convención que .modal-confirmacion) y con
+   altura táctil cómoda */
+.modal-pago .formulario__acciones {
+    justify-content: flex-end;
+}
+
+.modal-pago .formulario__acciones .boton {
+    padding: 0.75rem 1.25rem;
+}
+
+/* ---------- Modal "Editar pago" (cliente.html): layout de tres zonas ----------
+   Mismos criterios visuales que el modal Registrar pago, con estilos propios
+   (.modal-editar-pago) para no tocar los de ese modal. Encabezado fijo,
+   contenido con scroll sólo cuando hace falta (en escritorio el formulario
+   entra completo) y pie estable con el resumen y las acciones. */
+
+/* Flex únicamente cuando está abierto: si no, un display flex mostraría el
+   <dialog> cerrado sobre la página (el UA lo oculta con dialog:not([open])). */
+.modal-editar-pago[open] {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+}
+
+/* Encabezado: no se encoge ni scrollea */
+.modal-editar-pago__cabecera {
+    flex-shrink: 0;
+}
+
+/* Botón X de cierre: misma métrica que el del modal Registrar pago */
+.modal-editar-pago__cerrar {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    font-size: 1.375rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.modal-editar-pago__cerrar:hover {
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+.modal-editar-pago__cerrar:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* El <form> es la columna flexible y se divide en contenido con scroll y pie
+   estable. Los botones quedan dentro del formulario: la asociación y el
+   evento submit no cambian. */
+.modal-editar-pago .formulario {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+}
+
+/* Contenido central: única zona desplazable */
+.modal-editar-pago__contenido {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Pie: fuera del área con scroll pero dentro del formulario, así no se
+   superpone a los campos ni desaparece al desplazar. */
+.modal-editar-pago__pie {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Resumen en el pie: importes en línea, sin caja ni borde propios; el total
+   se alinea a la derecha, junto a las acciones (igual que Registrar pago). */
+.modal-editar-pago .resumen-pago {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1.5rem;
+    padding: 0;
+    border: none;
+}
+
+.modal-editar-pago .resumen-pago__fila {
+    justify-content: flex-start;
+    gap: 0.375rem;
+}
+
+.modal-editar-pago .resumen-pago__fila--total {
+    margin-left: auto;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* Acciones a la derecha y con altura táctil cómoda (como en Registrar pago) */
+.modal-editar-pago .formulario__acciones {
+    justify-content: flex-end;
+}
+
+.modal-editar-pago .formulario__acciones .boton {
+    padding: 0.75rem 1.25rem;
+}
+
+/* Tablet/desktop: dos columnas de campos, igual que el resto de formularios */
+@media (min-width: 640px) {
+    .modal-editar-pago__contenido {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ---------- Modales Agregar/Editar cliente (clientes.html): tres zonas ----------
+   Un único modal (#panel-formulario) atiende ambos modos; mismos criterios
+   visuales que los modales de pagos, con estilos propios (.modal-cliente) para
+   no tocar los demás modales. Encabezado fijo, contenido con scroll sólo cuando
+   hace falta (en escritorio el formulario entra completo) y pie con el error
+   general y las acciones. */
+
+/* Flex únicamente cuando está abierto: si no, un display flex mostraría el
+   <dialog> cerrado sobre la página (el UA lo oculta con dialog:not([open])). */
+.modal-cliente[open] {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+}
+
+/* Encabezado: no se encoge ni scrollea */
+.modal-cliente__cabecera {
+    flex-shrink: 0;
+}
+
+/* Botón X de cierre: misma métrica que el de los modales de pagos */
+.modal-cliente__cerrar {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    font-size: 1.375rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.modal-cliente__cerrar:hover {
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+.modal-cliente__cerrar:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* El <form> es la columna flexible y se divide en contenido con scroll y pie.
+   Los botones quedan dentro del formulario: la asociación y el evento submit
+   no cambian. */
+.modal-cliente .formulario {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+}
+
+/* Contenido central: única zona desplazable */
+.modal-cliente__contenido {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Pie: fuera del área con scroll pero dentro del formulario, así no se
+   superpone a los campos ni desaparece al desplazar. */
+.modal-cliente__pie {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Acciones a la derecha y con altura táctil cómoda (como en los modales de pagos) */
+.modal-cliente .formulario__acciones {
+    justify-content: flex-end;
+}
+
+.modal-cliente .formulario__acciones .boton {
+    padding: 0.75rem 1.25rem;
+}
+
+/* Tablet/desktop: dos columnas de campos */
+@media (min-width: 640px) {
+    .modal-cliente__contenido {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* Modales de confirmación de eliminación (cliente y pago): <dialog> nativos,
