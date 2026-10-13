@@ -156,12 +156,14 @@
             <ul class="listado-cards" id="tarjetas-clientes"></ul>
         </section>
 
-        <!-- Modal de confirmación para eliminar un cliente (nativo, sin CSS nuevo) -->
-        <dialog id="modal-eliminar">
-            <p id="modal-eliminar-texto"></p>
-            <div>
+        <!-- Modal de confirmación para eliminar un cliente (nativo, comparte
+             el estilo .modal-confirmacion con el de eliminar pago) -->
+        <dialog id="modal-eliminar" class="modal-confirmacion" aria-labelledby="modal-eliminar-titulo">
+            <h2 class="modal-confirmacion__titulo" id="modal-eliminar-titulo">Confirmar eliminación</h2>
+            <p class="modal-confirmacion__texto" id="modal-eliminar-texto"></p>
+            <div class="modal-confirmacion__acciones">
                 <button type="button" id="modal-eliminar-cancelar" class="boton boton--secundario">Cancelar</button>
-                <button type="button" id="modal-eliminar-confirmar" class="boton-accion">Eliminar</button>
+                <button type="button" id="modal-eliminar-confirmar" class="boton boton--peligro">Eliminar</button>
             </div>
         </dialog>
     </main>

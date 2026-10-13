@@ -172,12 +172,14 @@
             <ul class="historial-pagos__cards" id="historial-cards"></ul>
         </section>
 
-        <!-- Modal de confirmación para eliminar un pago (nativo, como en clientes.html) -->
-        <dialog id="modal-eliminar-pago">
-            <p id="modal-eliminar-pago-texto"></p>
-            <div>
+        <!-- Modal de confirmación para eliminar un pago (nativo, comparte
+             el estilo .modal-confirmacion con el de eliminar cliente) -->
+        <dialog id="modal-eliminar-pago" class="modal-confirmacion" aria-labelledby="modal-eliminar-pago-titulo">
+            <h2 class="modal-confirmacion__titulo" id="modal-eliminar-pago-titulo">¿Eliminar este pago?</h2>
+            <p class="modal-confirmacion__texto" id="modal-eliminar-pago-texto"></p>
+            <div class="modal-confirmacion__acciones">
                 <button type="button" id="modal-eliminar-pago-cancelar" class="boton boton--secundario">Cancelar</button>
-                <button type="button" id="modal-eliminar-pago-confirmar" class="boton-accion">Eliminar</button>
+                <button type="button" id="modal-eliminar-pago-confirmar" class="boton boton--peligro">Eliminar</button>
             </div>
         </dialog>
         <!--

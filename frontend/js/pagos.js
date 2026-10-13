@@ -243,21 +243,27 @@ function pagoActualizarMesesDisponibles() {
 }
 
 /*
-    Sincroniza la fecha de pago con el período seleccionado (mes y año del
-    selector): conserva el día que hoy tiene el campo de fecha, y si ese día no
-    existe en el mes de destino lo ajusta al último día válido de ese mes
-    (por ejemplo, 31 → 30 de septiembre o 28/29 de febrero).
+    Calcula la fecha de pago ("AAAA-MM-DD") para el período elegido en los
+    selectores de mes y año, partiendo del día que hoy tiene el campo de fecha:
+
+    - conserva el día si existe en el mes de destino;
+    - si no existe lo ajusta al último día válido de ese mes
+      (por ejemplo, 31 → 30 de septiembre o 28/29 de febrero);
+    - si el campo de fecha está vacío o inválido usa el día de hoy
+      (mismo cálculo con zona horaria que usa todo el formulario).
 
     La fecha se arma con Date.UTC para que JavaScript NO desborde un día
     inválido hacia el mes siguiente (el 31 de septiembre nunca pasa a octubre).
 
-    El campo sigue siendo editable: esta sincronización sólo ocurre al cambiar
-    el mes o el año del período; una edición manual de la fecha no se toca
-    mientras esos selectores no cambien.
+    Devuelve null si el mes o el año de los selectores no son válidos.
+
+    Es una función pura (sólo recibe campos y devuelve un string): la comparten
+    el formulario de registro (pagos.js) y el de edición del historial
+    (historial.js), con el mismo criterio en ambos.
 */
-function pagoSincronizarFechaConPeriodo() {
-    const mes = pagoANumero(pagoCampoMes.value);
-    const anio = pagoANumero(pagoCampoAnio.value);
+function pagoFechaParaPeriodo(campoMes, campoAnio, campoFecha) {
+    const mes = pagoANumero(campoMes.value);
+    const anio = pagoANumero(campoAnio.value);
 
     if (
         mes === null ||
@@ -267,12 +273,10 @@ function pagoSincronizarFechaConPeriodo() {
         mes > 12 ||
         !Number.isInteger(anio)
     ) {
-        return;
+        return null;
     }
 
-    // Día que hoy tiene el campo de fecha; si está vacío o inválido se usa el
-    // día de hoy (mismo cálculo con zona horaria que usa todo el formulario).
-    const coincide = /^(\d{4})-(\d{2})-(\d{2})$/.exec(pagoCampoFecha.value);
+    const coincide = /^(\d{4})-(\d{2})-(\d{2})$/.exec(campoFecha.value);
     const diaActual = coincide !== null ? Number(coincide[3]) : Number(pagoFechaDeHoy().slice(8, 10));
 
     // Último día del mes de destino: Date.UTC(año, mes, 0) es el día 0 del mes
@@ -284,7 +288,23 @@ function pagoSincronizarFechaConPeriodo() {
     const mesTexto = String(mes).padStart(2, "0");
     const diaTexto = String(dia).padStart(2, "0");
 
-    pagoCampoFecha.value = `${anioTexto}-${mesTexto}-${diaTexto}`;
+    return `${anioTexto}-${mesTexto}-${diaTexto}`;
+}
+
+/*
+    Sincroniza la fecha de pago con el período seleccionado en el formulario
+    de REGISTRO. El campo sigue siendo editable: esta sincronización sólo
+    ocurre al cambiar el mes o el año del período; una edición manual de la
+    fecha no se toca mientras esos selectores no cambien.
+*/
+function pagoSincronizarFechaConPeriodo() {
+    const fecha = pagoFechaParaPeriodo(pagoCampoMes, pagoCampoAnio, pagoCampoFecha);
+
+    if (fecha === null) {
+        return;
+    }
+
+    pagoCampoFecha.value = fecha;
 
     // El recargo sugerido depende del día de la fecha de pago: se re-aplica la
     // misma lógica que al editar la fecha a mano (respeta un % manual).

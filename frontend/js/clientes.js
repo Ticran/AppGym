@@ -960,15 +960,23 @@ let idClienteAEliminar = null;
 let eliminandoCliente = false;
 
 // Muestra el modal de confirmación con los datos del cliente a eliminar.
+// El título nombra al cliente (textContent: el nombre NUNCA se interpreta
+// como HTML) y el mensaje explica el efecto de la eliminación.
 function abrirModalEliminar(id, nombreApellido) {
     idClienteAEliminar = id;
 
+    const titulo = document.getElementById("modal-eliminar-titulo");
     const texto = document.getElementById("modal-eliminar-texto");
     const botonConfirmar = document.getElementById("modal-eliminar-confirmar");
     const modal = document.getElementById("modal-eliminar");
 
+    if (titulo) {
+        titulo.textContent = "¿Eliminar a " + nombreApellido + "?";
+    }
+
     if (texto) {
-        texto.textContent = "¿Eliminar el cliente " + nombreApellido + "? Esta acción no se puede deshacer.";
+        texto.textContent =
+            "Esta acción eliminará permanentemente los datos del cliente y no se podrá deshacer.";
     }
 
     if (botonConfirmar) {

@@ -164,12 +164,14 @@ async function historialCargar() {
 // ---------- Eliminación de un pago ----------
 
 function historialAbrirModalEliminar(pago) {
+    // El título del modal ya trae "¿Eliminar este pago?" (cliente.html); acá se
+    // completa el mensaje con el período y el importe reales del pago a eliminar.
     textoEliminarPago.textContent =
-        "¿Eliminar el pago de " +
+        "Se eliminará el registro del pago de " +
         historialNombrePeriodo(pago) +
         " por " +
         formatearPesos(pago.importeTotal) +
-        "? Esta acción no se puede deshacer.";
+        ". Esta acción no se puede deshacer.";
 
     historialPagoEnEdicion = pago;
     botonEliminarPagoConfirmar.textContent = "Eliminar";
@@ -479,6 +481,35 @@ function historialLlenarAniosEdicion(pago) {
         });
 }
 
+/*
+    Sincroniza la fecha de pago del modal de edición con el período elegido,
+    con el MISMO criterio que el formulario de registro (función compartida
+    pagoFechaParaPeriodo de pagos.js): conserva el día seleccionado y si no
+    existe en el mes destino lo ajusta al último día válido.
+
+    Después de asignar la fecha se recalcula el resumen con la lógica de este
+    modal (igual que al cambiar la fecha a mano): el porcentaje de recargo NO
+    se sobrescribe, sólo se actualizan los importes mostrados.
+*/
+function historialSincronizarFechaConPeriodo() {
+    const fecha = pagoFechaParaPeriodo(editarCampoMes, editarCampoAnio, editarCampoFecha);
+
+    if (fecha === null) {
+        return;
+    }
+
+    editarCampoFecha.value = fecha;
+    historialActualizarResumenEdicion();
+}
+
+// Cambió el mes o el año del período en la edición: primero se ajustan los
+// meses permitidos (puede corregir el mes si el año elegido es el actual) y
+// recién después se sincroniza la fecha con el período realmente elegido.
+function historialManejarCambioDePeriodoEdicion() {
+    historialActualizarMesesDisponiblesEdicion();
+    historialSincronizarFechaConPeriodo();
+}
+
 // Abre el modal de edición con los datos actuales del pago.
 function historialAbrirModalEditar(pago) {
     historialPagoEnEdicion = pago;
@@ -774,7 +805,8 @@ function historialInicializar() {
         });
     }
 
-    editarCampoAnio.addEventListener("change", historialActualizarMesesDisponiblesEdicion);
+    editarCampoAnio.addEventListener("change", historialManejarCambioDePeriodoEdicion);
+    editarCampoMes.addEventListener("change", historialManejarCambioDePeriodoEdicion);
     editarCampoCuota.addEventListener("input", historialActualizarResumenEdicion);
     editarCampoPorcentaje.addEventListener("input", historialActualizarResumenEdicion);
     editarCampoFecha.addEventListener("change", historialActualizarResumenEdicion);

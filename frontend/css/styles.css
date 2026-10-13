@@ -189,6 +189,28 @@ body {
 
 /* .boton--secundario no define estilos propios: su aspecto es el de .boton. */
 
+/* Variante destructiva: fondo rojo y texto blanco, misma métrica que .boton.
+   Sólo la usan los botones "Eliminar" de los modales de confirmación. */
+.boton--peligro {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #ffffff;
+}
+
+.boton--peligro:hover {
+    background-color: var(--color-danger);
+    filter: brightness(0.92);
+}
+
+.boton--peligro:active {
+    filter: brightness(0.85);
+}
+
+/* El foco de la variante destructiva también se distingue en rojo. */
+.boton--peligro:focus-visible {
+    outline-color: var(--color-danger);
+}
+
 .boton:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
@@ -405,7 +427,7 @@ body {
 .tabla-clientes th,
 .tabla-clientes td {
     padding: 0.75rem 1rem;
-    text-align: left;
+    text-align: center;
     vertical-align: middle;
     white-space: nowrap;
     border-bottom: 1px solid var(--color-border);
@@ -480,7 +502,7 @@ body {
 .tarjeta-cliente__acciones,
 .acciones {
     display: inline-flex;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 /* ---------- Estado (Activo / Inactivo) ---------- */
@@ -514,22 +536,31 @@ body {
     background-color: rgba(107, 114, 128, 0.14);
 }
 
-/* ---------- Botones de acción (Ver / Editar) ---------- */
+/* ---------- Botones de acción (Ver / Editar / Eliminar) ---------- */
 
+/* Base compartida por los botones de acciones de Clientes y Pagos:
+   secundario compacto (borde gris, texto azul). Las variantes de color de
+   abajo sólo cambian colores, así alturas, padding y tipografía quedan
+   idénticas en las dos pantallas. El ancho se adapta al contenido. */
 .boton-accion {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.4rem 0.875rem;
+    padding: 0.3rem 0.625rem;
     border: 1px solid var(--color-border);
     border-radius: 8px;
     background-color: var(--color-surface);
     color: var(--color-primary);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1.2;
     text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
 }
 
 .boton-accion:hover {
@@ -537,15 +568,62 @@ body {
     border-color: var(--color-primary-soft);
 }
 
-/* Ver / Editar / Eliminar: exactamente el mismo tamaño dentro de la tabla.
-   El min-width supera el ancho natural de "Eliminar" (el texto más largo),
-   así los tres botones miden lo mismo y el texto nunca se corta. */
-.acciones .boton-accion {
-    min-width: 6rem;
-    white-space: nowrap;
+.boton-accion:active {
+    background-color: #bfdbfe;
+    border-color: #bfdbfe;
 }
 
-/* Si no entran los tres botones, el grupo baja de línea en lugar de empujar la celda. */
+/* Indicador de foco visible para navegación con teclado. */
+.boton-accion:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* "Ver": botón principal con fondo azul y texto blanco.
+   Sólo el enlace "Ver" de Clientes usa <a class="boton-accion">. */
+a.boton-accion {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+a.boton-accion:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+a.boton-accion:active {
+    background-color: #1e40af;
+    border-color: #1e40af;
+}
+
+/* "Eliminar": siempre el último botón del grupo de acciones, en la tabla y
+   en las tarjetas de Clientes, y en el historial de Pagos. Texto rojo sobre
+   el mismo fondo blanco de la base. */
+.acciones > .boton-accion:last-child,
+.tarjeta-cliente__acciones > .boton-accion:last-child {
+    color: var(--color-danger);
+}
+
+.acciones > .boton-accion:last-child:hover,
+.tarjeta-cliente__acciones > .boton-accion:last-child:hover {
+    background-color: rgba(220, 39, 38, 0.08);
+    border-color: rgba(220, 39, 38, 0.35);
+}
+
+.acciones > .boton-accion:last-child:active,
+.tarjeta-cliente__acciones > .boton-accion:last-child:active {
+    background-color: rgba(220, 39, 38, 0.16);
+    border-color: rgba(220, 39, 38, 0.5);
+}
+
+.acciones > .boton-accion:last-child:focus-visible,
+.tarjeta-cliente__acciones > .boton-accion:last-child:focus-visible {
+    outline-color: var(--color-danger);
+}
+
+/* Sin anchos mínimos: el ancho lo define el contenido, así el grupo de
+   Ver / Editar / Eliminar cabe en una sola fila dentro de la celda. */
 .acciones {
     flex-wrap: wrap;
 }
@@ -709,7 +787,7 @@ body {
     .encabezado {
         position: sticky;
         top: 0;
-        width: 240px;
+        width: 18%;
         height: 100vh;
         flex-shrink: 0;
         display: flex;
@@ -943,10 +1021,10 @@ body {
 
 .historial-pagos__tabla-interna th,
 .historial-pagos__tabla-interna td {
-    text-align: left;
+    text-align: center;
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--color-border);
-    white-space: nowrap;
+    white-space: normal;
 }
 
 .historial-pagos__tabla-interna th {
@@ -954,6 +1032,14 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--color-text-secondary);
+}
+
+.historial-pagos__tabla-interna .acciones{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 /* Tarjetas de pagos: mobile y tablet */
@@ -1039,6 +1125,43 @@ body {
 .modal-editar-pago::backdrop,
 .modal-formulario::backdrop {
     background-color: rgba(31, 41, 55, 0.5);
+}
+
+/* Modales de confirmación de eliminación (cliente y pago): <dialog> nativos,
+   así que el overlay oscurecido, el centrado en el viewport y el bloqueo de la
+   interacción con el fondo ya los aporta showModal(). Acá sólo se estiliza el
+   contenedor, compartido entre ambos modales para no duplicar reglas. */
+.modal-confirmacion {
+    width: min(26rem, calc(100% - 2rem));
+    padding: 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radio-borde);
+    background-color: var(--color-surface);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-confirmacion::backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-confirmacion__titulo {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.modal-confirmacion__texto {
+    margin: 0 0 1.25rem;
+    color: var(--color-text-secondary);
+}
+
+/* Cancelar a la izquierda, Eliminar a la derecha; si no entran en el ancho
+   disponible el grupo baja de línea en vez de desbordar. */
+.modal-confirmacion__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 /* En desktop la tabla reemplaza a las tarjetas */
