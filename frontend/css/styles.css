@@ -318,6 +318,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
+    padding: 5px;
 }
 
 .formulario__campo label {
