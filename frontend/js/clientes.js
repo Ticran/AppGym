@@ -493,14 +493,116 @@ function mostrarAvisoFormulario(mensaje) {
     }
 }
 
-// Muestra u oculta el aviso de éxito del listado (se ve tras cerrar el formulario).
-function mostrarAvisoExito(mensaje) {
-    const aviso = document.getElementById("aviso-exito-listado");
+// ---------- Notificaciones flotantes (crear, editar y eliminar clientes) ----------
 
-    if (aviso) {
-        aviso.textContent = mensaje;
-        aviso.hidden = mensaje === "";
+// Temporizador del mensaje de éxito visible. Se limpia antes de mostrar otro
+// mensaje para que el cierre de uno anterior no oculte el actual.
+let temporizadorNotificacion = null;
+
+// Duración del éxito en pantalla. Los errores no se cierran solos.
+const NOTIFICACION_DURACION_EXITO_MS = 5000;
+
+// Los <dialog> abiertos de esta página (formulario de cliente, confirmación de
+// eliminación y, en cliente.html, los modales de pagos) viven en el top-layer
+// del navegador: cualquier elemento fixed del body
+// quedaría DETRÁS de su backdrop sin importar el z-index. Para que la
+// notificación no quede oculta, el contenedor se mueve dentro del diálogo
+// abierto y vuelve al body cuando éste se cierra. Se reubica el MISMO nodo
+// (nunca se recrea): así temporizadores y listeners se conservan.
+function ubicarContenedorNotificaciones() {
+    const contenedor = document.getElementById("notificaciones-clientes");
+
+    if (!contenedor) {
+        return null;
     }
+
+    // Se toma cualquier <dialog> abierto, sin depender de una lista de IDs:
+    // así el mismo mecanismo cubre los modales de clientes y los de pagos.
+    const dialogoAbierto = document.querySelector("dialog[open]");
+    const destino = dialogoAbierto === null ? document.body : dialogoAbierto;
+
+    if (contenedor.parentElement !== destino) {
+        destino.appendChild(contenedor);
+    }
+
+    return contenedor;
+}
+
+// Un <dialog> cerrado oculta su contenido: al cerrarse, el contenedor vuelve
+// al body para que un error persistente siga visible en la página.
+function devolverNotificacionesAlCuerpo() {
+    const contenedor = document.getElementById("notificaciones-clientes");
+
+    if (contenedor && contenedor.parentElement !== document.body) {
+        document.body.appendChild(contenedor);
+    }
+}
+
+// Muestra una notificación fija, arriba a la derecha, sin desplazar la página.
+// `tipo` es "exito" (se cierra solo a los ~5 segundos) o "error" (permanece
+// hasta que el usuario la cierra con su botón). Sólo hay un mensaje a la vez.
+function mostrarNotificacion(mensaje, tipo) {
+    const contenedor = ubicarContenedorNotificaciones();
+
+    if (!contenedor) {
+        return;
+    }
+
+    // El temporizador anterior nunca debe cerrar el mensaje nuevo.
+    if (temporizadorNotificacion !== null) {
+        clearTimeout(temporizadorNotificacion);
+        temporizadorNotificacion = null;
+    }
+
+    contenedor.replaceChildren();
+
+    const esError = tipo === "error";
+
+    const notificacion = document.createElement("div");
+    notificacion.className = "notificacion notificacion--" + (esError ? "error" : "exito");
+    notificacion.setAttribute("role", esError ? "alert" : "status");
+    notificacion.setAttribute("aria-live", esError ? "assertive" : "polite");
+
+    const icono = document.createElement("span");
+    icono.className = "notificacion__icono";
+    // El icono decora el mensaje: el texto explica la operación por sí solo.
+    icono.setAttribute("aria-hidden", "true");
+    icono.textContent = esError ? "✕" : "✓";
+
+    const texto = document.createElement("p");
+    texto.className = "notificacion__texto";
+    texto.textContent = mensaje;
+
+    const botonCerrar = document.createElement("button");
+    botonCerrar.type = "button";
+    botonCerrar.className = "notificacion__cerrar";
+    botonCerrar.setAttribute("aria-label", "Cerrar notificación");
+    botonCerrar.textContent = "×";
+
+    notificacion.append(icono, texto, botonCerrar);
+    contenedor.appendChild(notificacion);
+
+    if (!esError) {
+        temporizadorNotificacion = setTimeout(() => {
+            temporizadorNotificacion = null;
+            contenedor.replaceChildren();
+        }, NOTIFICACION_DURACION_EXITO_MS);
+    }
+}
+
+// Nombre y apellido de un cliente para los mensajes; "" si faltan los datos.
+function nombreDeCliente(cliente) {
+    if (!cliente || typeof cliente !== "object") {
+        return "";
+    }
+
+    return ((cliente.nombre || "") + " " + (cliente.apellido || "")).trim();
+}
+
+// Muestra el aviso de éxito de crear/editar un cliente como notificación
+// flotante: se ve sin importar la posición de desplazamiento de la página.
+function mostrarAvisoExito(mensaje) {
+    mostrarNotificacion(mensaje, "exito");
 }
 
 // Lee el valor de cada campo y lo devuelve en un objeto.
@@ -653,22 +755,27 @@ async function manejarEnvioFormulario(evento) {
         if (respuesta.status === 400) {
             const cuerpo = respuesta.datos || {};
             const detalles = Array.isArray(cuerpo.detalles) ? cuerpo.detalles.join(" ") : "";
-            mostrarAvisoFormulario(detalles || "Datos inválidos.");
+            const mensajeValidacion = detalles || "Datos inválidos.";
+            mostrarAvisoFormulario(mensajeValidacion);
+            mostrarNotificacion(mensajeValidacion, "error");
             return;
         }
 
         if (respuesta.status === 404) {
             mostrarAvisoFormulario("Cliente no encontrado.");
+            mostrarNotificacion("Cliente no encontrado.", "error");
             return;
         }
 
         if (respuesta.status === 409) {
             mostrarErrores({ dni: "Ya existe un cliente con ese DNI." });
+            mostrarNotificacion("Ya existe un cliente con ese DNI.", "error");
             return;
         }
 
         if (!respuesta.ok) {
             mostrarAvisoFormulario("No se pudo actualizar el cliente.");
+            mostrarNotificacion("No se pudo actualizar el cliente.", "error");
             return;
         }
 
@@ -676,11 +783,18 @@ async function manejarEnvioFormulario(evento) {
         aplicarClienteActualizado(respuesta.datos);
         cerrarFormulario();
         renderizarClientes(aplicarFiltros());
-        mostrarAvisoExito("Cliente actualizado correctamente.");
+
+        const nombreEditado = nombreDeCliente(respuesta.datos) || nombreDeCliente(datos);
+        mostrarAvisoExito(
+            nombreEditado !== ""
+                ? "Cliente " + nombreEditado + " actualizado correctamente."
+                : "Cliente actualizado correctamente."
+        );
     } catch (error) {
         // Falla de red o backend apagado: detalle técnico solo en consola.
         console.error("No se pudo actualizar el cliente:", error.message);
         mostrarAvisoFormulario("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+        mostrarNotificacion("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.", "error");
     } finally {
         guardandoCliente = false;
         boton.disabled = false;
@@ -703,17 +817,21 @@ async function crearClienteEnAPI(datos) {
         if (respuesta.status === 400) {
             const cuerpo = respuesta.datos || {};
             const detalles = Array.isArray(cuerpo.detalles) ? cuerpo.detalles.join(" ") : "";
-            mostrarAvisoFormulario(detalles || "Datos inválidos.");
+            const mensajeValidacion = detalles || "Datos inválidos.";
+            mostrarAvisoFormulario(mensajeValidacion);
+            mostrarNotificacion(mensajeValidacion, "error");
             return;
         }
 
         if (respuesta.status === 409) {
             mostrarErrores({ dni: "Ya existe un cliente con ese DNI." });
+            mostrarNotificacion("Ya existe un cliente con ese DNI.", "error");
             return;
         }
 
         if (!respuesta.ok) {
             mostrarAvisoFormulario("No se pudo crear el cliente.");
+            mostrarNotificacion("No se pudo crear el cliente.", "error");
             return;
         }
 
@@ -721,11 +839,16 @@ async function crearClienteEnAPI(datos) {
         clientes.push(respuesta.datos);
         cerrarFormulario();
         renderizarClientes(aplicarFiltros());
-        mostrarAvisoExito("Cliente creado correctamente.");
+
+        const nombreCreado = nombreDeCliente(respuesta.datos) || nombreDeCliente(datos);
+        mostrarAvisoExito(
+            nombreCreado !== "" ? "Cliente " + nombreCreado + " creado correctamente." : "Cliente creado correctamente."
+        );
     } catch (error) {
         // Falla de red o backend apagado: detalle técnico solo en consola.
         console.error("No se pudo crear el cliente:", error.message);
         mostrarAvisoFormulario("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+        mostrarNotificacion("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.", "error");
     } finally {
         guardandoCliente = false;
         boton.disabled = false;
@@ -1026,35 +1149,44 @@ async function eliminarClienteEnAPI(id) {
             // Ya no existe (por ejemplo, eliminado en otra pestaña): se quita de la vista.
             quitarClienteDeLaLista(id);
             renderizarClientes(aplicarFiltros());
-            mostrarMensajeListado("El cliente no fue encontrado. Puede que ya se haya eliminado.");
+            mostrarNotificacion("El cliente no fue encontrado. Puede que ya se haya eliminado.", "error");
             return;
         }
 
         if (respuesta.status === 400) {
-            mostrarMensajeListado("ID de cliente inválido.");
+            mostrarNotificacion("ID de cliente inválido.", "error");
             return;
         }
 
         if (respuesta.status === 409) {
             // El backend bloquea la eliminación: el cliente tiene pagos
             // registrados. No se lo quita de la lista y sus pagos quedan intactos.
-            mostrarMensajeListado("No se puede eliminar este cliente porque tiene pagos registrados.");
+            mostrarNotificacion("No se puede eliminar este cliente porque tiene pagos registrados.", "error");
             return;
         }
 
         if (!respuesta.ok) {
-            mostrarMensajeListado("No se pudo eliminar el cliente.");
+            mostrarNotificacion("No se pudo eliminar el cliente.", "error");
             return;
         }
 
-        // 200: el backend confirma el borrado definitivo en MongoDB.
+        // 200: el backend confirma el borrado definitivo en MongoDB. El nombre
+        // se toma ANTES de quitar el cliente de la lista local.
+        const clienteEliminado = clientes.find((cliente) => identificarCliente(cliente) === id);
         quitarClienteDeLaLista(id);
         renderizarClientes(aplicarFiltros());
-        mostrarMensajeListado("Cliente eliminado correctamente.");
+
+        const nombreEliminado = nombreDeCliente(clienteEliminado);
+        mostrarNotificacion(
+            nombreEliminado !== ""
+                ? "Cliente " + nombreEliminado + " eliminado correctamente."
+                : "Cliente eliminado correctamente.",
+            "exito"
+        );
     } catch (error) {
         // Falla de red o backend apagado: detalle técnico solo en consola.
         console.error("No se pudo eliminar el cliente:", error.message);
-        mostrarMensajeListado("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.");
+        mostrarNotificacion("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.", "error");
     } finally {
         eliminandoCliente = false;
 
@@ -1150,3 +1282,39 @@ if (document.getElementById("listado-clientes")) {
 if (document.getElementById("ficha-detalle")) {
     inicializarFichaCliente();
 }
+
+// ---------- Notificaciones: cierre manual y reubicación ----------
+
+// El cierre se resuelve por delegación en el contenedor: así sigue funcionando
+// aunque el contenedor cambie de padre (body <-> <dialog> abierto).
+const contenedorNotificaciones = document.getElementById("notificaciones-clientes");
+
+if (contenedorNotificaciones) {
+    contenedorNotificaciones.addEventListener("click", (evento) => {
+        const botonCerrar = evento.target.closest(".notificacion__cerrar");
+
+        if (!botonCerrar) {
+            return;
+        }
+
+        // También se limpia el temporizador: un cierre manual no debe
+        // interferir con un mensaje posterior.
+        if (temporizadorNotificacion !== null) {
+            clearTimeout(temporizadorNotificacion);
+            temporizadorNotificacion = null;
+        }
+
+        const notificacion = botonCerrar.closest(".notificacion");
+
+        if (notificacion) {
+            notificacion.remove();
+        }
+    });
+}
+
+// Al cerrarse cualquier diálogo de la página, el contenedor vuelve al body
+// para que un mensaje de error persistente no quede oculto dentro del
+// <dialog> cerrado (cubre los modales de clientes y los de pagos).
+document.querySelectorAll("dialog").forEach((dialogo) => {
+    dialogo.addEventListener("close", devolverNotificacionesAlCuerpo);
+});

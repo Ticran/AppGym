@@ -87,6 +87,22 @@ function historialNombrePeriodo(pago) {
     return PAGOS_MESES[pago.mes - 1] + " " + pago.anio;
 }
 
+// Nombre completo del cliente de la ficha para las notificaciones de edición:
+// primero el cliente que cargó el panel de registro (pagos.js); si no está, el
+// título de la ficha. "" si no hay datos: el mensaje se arma igual, sin ese
+// fragmento.
+function historialNombreCliente() {
+    const nombre = nombreDeCliente(pagoClienteCargado);
+
+    if (nombre !== "") {
+        return nombre;
+    }
+
+    const titulo = document.querySelector(".ficha-detalle__titulo");
+
+    return titulo ? titulo.textContent.trim() : "";
+}
+
 // Descripción del recargo de un pago: "Sin recargo" o "$2.000 (10%)".
 function historialTextoRecargo(pago) {
     if (pago.porcentajeRecargo === 0) {
@@ -208,34 +224,36 @@ async function historialConfirmarEliminar() {
         historialCerrarModalEliminar();
 
         if (respuesta.status === 200) {
-            historialMostrarMensaje(
-                "Pago de " + historialNombrePeriodo(pago) + " eliminado correctamente.",
-                "exito"
-            );
+            // Notificación de éxito con el cliente y el período del pago (mismo
+            // estilo que las notificaciones de registro y edición). El modal de
+            // confirmación ya se cerró arriba, así que queda en el <body>.
+            const nombreCliente = historialNombreCliente();
+            const periodo = pagoTextoPeriodo(pago.mes, pago.anio);
+            const destino =
+                (nombreCliente !== "" ? " para " + nombreCliente : "") + (periodo !== "" ? " — " + periodo : "");
+
+            mostrarNotificacion("Pago eliminado correctamente" + destino + ".", "exito");
             await historialCargar();
             return;
         }
 
         if (respuesta.status === 404) {
-            historialMostrarMensaje(
-                "El pago ya no existía. Se actualizó el historial.",
-                "error"
-            );
+            const mensajeNoExistia = "El pago ya no existía. Se actualizó el historial.";
+            historialMostrarMensaje(mensajeNoExistia, "error");
+            mostrarNotificacion(mensajeNoExistia, "error");
             await historialCargar();
             return;
         }
 
-        historialMostrarMensaje(
-            mensajeDeErrorDeAPI(respuesta.datos, "No se pudo eliminar el pago."),
-            "error"
-        );
+        const mensajeFallo = mensajeDeErrorDeAPI(respuesta.datos, "No se pudo eliminar el pago.");
+        historialMostrarMensaje(mensajeFallo, "error");
+        mostrarNotificacion(mensajeFallo, "error");
     } catch (error) {
         console.error("No se pudo eliminar el pago:", error.message);
         historialCerrarModalEliminar();
-        historialMostrarMensaje(
-            "No se pudo conectar con el servidor. Verificá que el backend esté corriendo.",
-            "error"
-        );
+        const mensajeRed = "No se pudo conectar con el servidor. Verificá que el backend esté corriendo.";
+        historialMostrarMensaje(mensajeRed, "error");
+        mostrarNotificacion(mensajeRed, "error");
     } finally {
         historialEliminando = false;
     }
@@ -690,10 +708,14 @@ async function historialManejarEnvioEdicion(evento) {
 
             historialCerrarModalEditar();
 
-            const detalle =
-                "Pago de " +
-                historialNombrePeriodo(pagoActualizado) +
-                " actualizado correctamente.";
+            // Nombre del cliente y período para la notificación:
+            // " para Juan Pérez — octubre de 2026" (con los datos disponibles).
+            const nombreCliente = historialNombreCliente();
+            const periodo = pagoTextoPeriodo(pagoActualizado.mes, pagoActualizado.anio);
+            const destino =
+                (nombreCliente !== "" ? " para " + nombreCliente : "") + (periodo !== "" ? " — " + periodo : "");
+
+            const detalle = "Pago actualizado correctamente" + destino + ".";
 
             let textoDelMensaje;
             let tipoDelMensaje;
@@ -716,45 +738,46 @@ async function historialManejarEnvioEdicion(evento) {
                 tipoDelMensaje = "exito";
             }
 
-            // El listado se recarga para mostrar el pago editado. El mensaje se
-            // muestra DESPUÉS: historialCargar() limpia el mensaje al empezar.
+            // El listado se recarga para mostrar el pago editado. La
+            // notificación se muestra DESPUÉS: historialCargar() limpia el
+            // mensaje del listado al empezar, y el modal ya se cerró, así que
+            // la notificación queda en el <body>, visible sin importar el
+            // scroll de la página.
             await historialCargar();
-            historialMostrarMensaje(textoDelMensaje, tipoDelMensaje);
+            mostrarNotificacion(textoDelMensaje, tipoDelMensaje);
 
             return;
         }
 
         if (respuesta.status === 409) {
-            historialMostrarMensajeEdicion(
-                "El cliente ya tiene un pago registrado para el mes y año elegidos.",
-                "error"
-            );
+            const mensajeDuplicado = "El cliente ya tiene un pago registrado para el mes y año elegidos.";
+            historialMostrarMensajeEdicion(mensajeDuplicado, "error");
+            mostrarNotificacion(mensajeDuplicado, "error");
             return;
         }
 
         if (respuesta.status === 404) {
-            historialMostrarMensajeEdicion(
-                "El pago ya no existe. Puede que se haya eliminado.",
-                "error"
-            );
+            const mensajeNoExiste = "El pago ya no existe. Puede que se haya eliminado.";
+            historialMostrarMensajeEdicion(mensajeNoExiste, "error");
+            mostrarNotificacion(mensajeNoExiste, "error");
             return;
         }
 
         if (respuesta.status === 400) {
-            historialMostrarMensajeEdicion(
-                mensajeDeErrorDeAPI(respuesta.datos, "Los datos enviados no son válidos."),
-                "error"
-            );
+            const mensajeValidacion = mensajeDeErrorDeAPI(respuesta.datos, "Los datos enviados no son válidos.");
+            historialMostrarMensajeEdicion(mensajeValidacion, "error");
+            mostrarNotificacion(mensajeValidacion, "error");
             return;
         }
 
-        historialMostrarMensajeEdicion("No se pudo actualizar el pago. Intentá nuevamente.", "error");
+        const mensajeFallo = "No se pudo actualizar el pago. Intentá nuevamente.";
+        historialMostrarMensajeEdicion(mensajeFallo, "error");
+        mostrarNotificacion(mensajeFallo, "error");
     } catch (error) {
         console.error("No se pudo actualizar el pago:", error.message);
-        historialMostrarMensajeEdicion(
-            "No se pudo conectar con el servidor. Verificá que el backend esté corriendo.",
-            "error"
-        );
+        const mensajeRed = "No se pudo conectar con el servidor. Verificá que el backend esté corriendo.";
+        historialMostrarMensajeEdicion(mensajeRed, "error");
+        mostrarNotificacion(mensajeRed, "error");
     } finally {
         historialEditando = false;
         botonGuardarEdicionPago.disabled = false;

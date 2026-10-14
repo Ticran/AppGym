@@ -107,6 +107,20 @@ function pagoFormatearImporte(valor) {
     return valor === null ? "—" : formatearPesos(valor);
 }
 
+// "octubre de 2026" a partir de mes (1-12) y año, para las notificaciones.
+// Devuelve "" si faltan los datos: el mensaje se arma sin ese fragmento en vez
+// de mostrar texto roto.
+function pagoTextoPeriodo(mes, anio) {
+    const numeroMes = Number(mes);
+    const numeroAnio = Number(anio);
+
+    if (!PAGOS_MESES[numeroMes - 1] || !numeroAnio) {
+        return "";
+    }
+
+    return PAGOS_MESES[numeroMes - 1].toLowerCase() + " de " + numeroAnio;
+}
+
 /*
     Calcula los importes del pago con la misma fórmula y el mismo redondeo que
     el backend:
@@ -587,10 +601,16 @@ async function pagoManejarEnvio(evento) {
 
         if (respuesta.status === 201) {
             const pago = respuesta.datos;
-            const detalle =
-                pago && pago.mes
-                    ? PAGOS_MESES[pago.mes - 1] + " " + pago.anio + " por " + formatearPesos(pago.importeTotal)
-                    : "correctamente";
+
+            // Nombre del cliente y período para la notificación:
+            // " para Juan Pérez — octubre de 2026" (con los datos disponibles).
+            const nombreCliente = nombreDeCliente(pagoClienteCargado);
+            const periodo = pagoTextoPeriodo(pago && pago.mes, pago && pago.anio);
+            let destino = nombreCliente !== "" ? " para " + nombreCliente : "";
+
+            if (periodo !== "") {
+                destino += " — " + periodo;
+            }
 
             // El backend actualiza `cuotaActual` del cliente con el importe base
             // del pago SÓLO si el pago es del mes y año actuales. El cliente que
@@ -607,57 +627,79 @@ async function pagoManejarEnvio(evento) {
             // Se deja el formulario listo para el próximo registro.
             pagoPrepararFormulario();
 
+            let textoDelMensaje;
+            let tipoDelMensaje;
+
             if (pago.advertencia) {
                 // El pago se registró, pero la cuota no se pudo actualizar: se
                 // muestra el aviso del backend en lugar de un éxito que sería falso.
-                pagoMostrarMensaje("Pago registrado " + detalle + ". " + pago.advertencia, "error");
+                textoDelMensaje =
+                    "Pago registrado" +
+                    destino +
+                    (periodo !== "" ? " por " + formatearPesos(pago.importeTotal) : "") +
+                    ". " +
+                    pago.advertencia;
+                tipoDelMensaje = "error";
             } else if (cuotaActualizada) {
-                pagoMostrarMensaje(
-                    "Pago registrado " +
-                        detalle +
-                        ". La cuota actual del cliente se actualizó a " +
-                        formatearPesos(pago.importeCuota) +
-                        ".",
-                    "exito"
-                );
+                textoDelMensaje =
+                    "Pago registrado correctamente" +
+                    destino +
+                    ". La cuota actual del cliente se actualizó a " +
+                    formatearPesos(pago.importeCuota) +
+                    ".";
+                tipoDelMensaje = "exito";
             } else {
-                pagoMostrarMensaje(
-                    "Pago registrado " +
-                        detalle +
-                        ". La cuota actual del cliente no cambió porque el pago no es del mes actual.",
-                    "exito"
-                );
+                textoDelMensaje =
+                    "Pago registrado correctamente" +
+                    destino +
+                    ". La cuota actual del cliente no cambió porque el pago no es del mes actual.";
+                tipoDelMensaje = "exito";
             }
 
             // El historial de la ficha escucha este evento para refrescarse
             // sin recargar la página (lo maneja historial.js).
             document.dispatchEvent(new CustomEvent("pago-registrado"));
+
+            // El panel sólo se cierra con el pago confirmado por el backend
+            // (201). Cualquier error deja el modal abierto y con los datos del
+            // formulario para poder corregirlos. La notificación se muestra
+            // después del cierre: queda en el <body>, visible sin importar el
+            // estado del modal.
+            pagoCerrarPanel();
+            mostrarNotificacion(textoDelMensaje, tipoDelMensaje);
             return;
         }
 
         if (respuesta.status === 409) {
-            pagoMostrarMensaje(
-                "Ese cliente ya tiene un pago registrado para ese mes y año. Elegí otro mes.",
-                "error"
-            );
+            const mensajeDuplicado = "Ese cliente ya tiene un pago registrado para ese mes y año. Elegí otro mes.";
+            pagoMostrarMensaje(mensajeDuplicado, "error");
+            mostrarNotificacion(mensajeDuplicado, "error");
             return;
         }
 
         if (respuesta.status === 404) {
-            pagoMostrarMensaje("Cliente no encontrado. Puede que se haya eliminado.", "error");
+            const mensajeNoEncontrado = "Cliente no encontrado. Puede que se haya eliminado.";
+            pagoMostrarMensaje(mensajeNoEncontrado, "error");
+            mostrarNotificacion(mensajeNoEncontrado, "error");
             return;
         }
 
         if (respuesta.status === 400) {
             // El backend explica qué campo falló en { error, detalles }.
-            pagoMostrarMensaje(mensajeDeErrorDeAPI(respuesta.datos, "Los datos enviados no son válidos."), "error");
+            const mensajeValidacion = mensajeDeErrorDeAPI(respuesta.datos, "Los datos enviados no son válidos.");
+            pagoMostrarMensaje(mensajeValidacion, "error");
+            mostrarNotificacion(mensajeValidacion, "error");
             return;
         }
 
-        pagoMostrarMensaje("No se pudo registrar el pago. Intentá nuevamente.", "error");
+        const mensajeFallo = "No se pudo registrar el pago. Intentá nuevamente.";
+        pagoMostrarMensaje(mensajeFallo, "error");
+        mostrarNotificacion(mensajeFallo, "error");
     } catch (error) {
         console.error("No se pudo registrar el pago:", error.message);
-        pagoMostrarMensaje("No se pudo conectar con el servidor. Verificá que el backend esté corriendo.", "error");
+        const mensajeRed = "No se pudo conectar con el servidor. Verificá que el backend esté corriendo.";
+        pagoMostrarMensaje(mensajeRed, "error");
+        mostrarNotificacion(mensajeRed, "error");
     } finally {
         pagoEnviando = false;
         pagoBotonGuardar.disabled = false;

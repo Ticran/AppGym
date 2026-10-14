@@ -177,6 +177,15 @@
         </dialog>
     </main>
 
+    <!--
+        Notificaciones flotantes de éxito/error de las operaciones de clientes
+        (crear, editar y eliminar). Posición fija arriba a la derecha: no
+        desplazan el contenido y se ven igual con la página desplazada. Si hay
+        un <dialog> abierto, clientes.js mueve este contenedor dentro del
+        modal para que el mensaje no quede oculto detrás de su backdrop.
+    -->
+    <div class="notificaciones" id="notificaciones-clientes"></div>
+
     <script src="js/api.js"></script>
     <script src="js/navegacion.js"></script>
     <!-- Protección de la página y botón "Cerrar sesión" -->

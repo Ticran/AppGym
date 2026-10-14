@@ -1638,3 +1638,131 @@ a.item-lista__nombre:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
+
+/* ---------- Notificaciones flotantes de clientes (crear, editar, eliminar) ---------- */
+
+/* Contenedor fijo arriba a la derecha: el mensaje se ve con la página en
+   cualquier posición de desplazamiento y no desplaza el contenido (no forma
+   parte del flujo del documento). El ancho se limita al viewport para no
+   desbordar en pantallas chicas. El resto del CSS no usa z-index en ninguna
+   parte: 1000 deja este contenedor sobre el contenido normal. Los <dialog>
+   modales viven en el top-layer del navegador y NO dependen de z-index: para
+   no quedar detrás de su backdrop, clientes.js mueve este contenedor dentro
+   del diálogo abierto. */
+.notificaciones {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: min(22rem, calc(100vw - 2rem));
+    /* Sólo la notificación recibe eventos: el área vacía del contenedor no
+       tapa la página. */
+    pointer-events: none;
+}
+
+/* Mensaje individual: icono + texto + botón de cierre. El color nunca es el
+   único indicador: el texto nombra la operación y el icono la refuerza. */
+.notificacion {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+    animation: notificacion-aparicion 0.2s ease-out;
+}
+
+.notificacion--exito {
+    background-color: #f0fdf4;
+    border: 1px solid rgba(22, 163, 74, 0.4);
+    color: #166534;
+}
+
+.notificacion--error {
+    background-color: #fef2f2;
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #991b1b;
+}
+
+/* Icono identificable (éxito ✓ / error ✕): es decoración, porque el texto
+   ya explica qué operación ocurrió o falló. */
+.notificacion__icono {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    font-size: 1rem;
+    line-height: 1;
+    background-color: rgba(22, 163, 74, 0.15);
+    color: var(--color-success);
+}
+
+.notificacion--error .notificacion__icono {
+    background-color: rgba(220, 38, 38, 0.15);
+    color: var(--color-danger);
+}
+
+.notificacion__texto {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* Botón de cierre: recibe el nombre accesible aria-label="Cerrar notificación" */
+.notificacion__cerrar {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background-color: transparent;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.notificacion__cerrar:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.notificacion__cerrar:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+@keyframes notificacion-aparicion {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Respeta la preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+    .notificacion {
+        animation: none;
+    }
+}

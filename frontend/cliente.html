@@ -109,7 +109,7 @@
                 <div class="formulario__campo">
                     <label for="campo-pago-cuota">Cuota de este mes</label>
                     <input type="number" id="campo-pago-cuota" name="importeCuota" min="0.01" step="0.01" inputmode="decimal" required aria-describedby="ayuda-pago-cuota error-pago-cuota" />
-                    <p class="formulario__ayuda" id="ayuda-pago-cuota">Se completa con la cuota actual del cliente; modificarla acá no cambia su cuota.</p>
+                    <p class="formulario__ayuda" id="ayuda-pago-cuota">Se completa con la cuota actual del cliente; modificarla acá cambia su cuota.</p>
                     <p class="formulario__error" id="error-pago-cuota" hidden></p>
                 </div>
 
@@ -278,6 +278,15 @@
             </form>
         </dialog>
     </main>
+
+    <!--
+        Notificaciones flotantes de éxito/error de las operaciones de esta
+        página (registro y edición de pagos). Mismo sistema que clientes.html:
+        posición fija arriba a la derecha, sin desplazar el contenido, y
+        reubicación dentro del <dialog> abierto para no quedar detrás de su
+        backdrop. El wiring vive en clientes.js (se carga en esta página).
+    -->
+    <div class="notificaciones" id="notificaciones-clientes"></div>
 
     <script src="js/api.js"></script>
     <script src="js/navegacion.js"></script>
