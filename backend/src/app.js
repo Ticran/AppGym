@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -32,9 +31,9 @@ verificarConfiguracion();
   - Desarrollo: orígenes locales permitidos con credenciales (la cookie es
     same-site: localhost front y back comparten site aunque cambie el puerto).
     Se admiten 5173 (Vite/Live Server), 5500 (Live Server) y 8080.
-  - Producción: CORS_ORIGEN con el único dominio válido (frontend y API
-    publicados bajo el mismo site/dominio). Sin CORS_ORIGEN y sin entorno de
-    desarrollo no se permite ningún origen con credenciales.
+  - Producción: CORS_ORIGEN con el origen explícito del frontend. Sin
+    CORS_ORIGEN y sin entorno de desarrollo no se permite ningún origen con
+    credenciales.
 */
 function construirOrigenes() {
   if (process.env.CORS_ORIGEN) {
@@ -80,14 +79,5 @@ app.use('/api/auth', authRoutes);
 // válida, TODOS los endpoints de clientes y pagos responden 401.
 app.use('/api/clientes', requireAuth, clientesRoutes);
 app.use('/api/pagos', requireAuth, pagosRoutes);
-
-/*
-  Producción: Express sirve el frontend desde el MISMO origen que la API, así la
-  cookie de sesión sigue siendo same-site (SameSite=Strict) y no se depende de
-  CORS. Va DESPUÉS de todas las rutas /api para que la API tenga prioridad.
-  Se apunta únicamente a frontend/: nunca a la raíz del repositorio, que
-  contiene backend/.env, node_modules y .git.
-*/
-app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));
 
 module.exports = app;

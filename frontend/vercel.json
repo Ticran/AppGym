@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://appgym-wgk1.onrender.com/api/:path*"
+    }
+  ]
+}
